@@ -12,7 +12,7 @@ Hệ thống bản đồ tương tác cung cấp thông tin các địa điểm 
 
 ## 📁 Cấu trúc thư mục hiện tại
 
-├── index.html / main.html # Giao diện bản đồ chính (Dành cho Khách/User)
+├── index.html / index.html # Giao diện bản đồ chính (Dành cho Khách/User)
 ├── style.css # Styling cho giao diện bản đồ
 ├── script.js # Logic bản đồ, tìm kiếm, lọc, đánh giá, offline cache
 ├── dashboard.html # Giao diện Quản trị hệ thống

@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     data: { session },
   } = await supabase.auth.getSession();
   if (session) {
-    window.location.href = "main.html";
+    window.location.href = "index.html";
     return;
   }
 
@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
       authMsg.className = "msg success";
       authMsg.textContent = "Đăng nhập thành công!";
-      window.location.href = "main.html"; // Trở về bản đồ
+      window.location.href = "index.html"; // Trở về bản đồ
     }
   });
 
@@ -88,7 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         authMsg.className = "msg success";
         authMsg.textContent = "Đăng ký thành công! Đang chuyển hướng...";
         setTimeout(() => {
-          window.location.href = "main.html";
+          window.location.href = "index.html";
         }, 1500);
       }
     });

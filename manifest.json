@@ -2,7 +2,7 @@
   "name": "Bản đồ Du lịch Núi Sập",
   "short_name": "Núi Sập Map",
   "description": "Bản đồ tương tác các địa điểm du lịch, quán ăn và khách sạn tại Núi Sập, An Giang.",
-  "start_url": "main.html",
+  "start_url": "index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0052cc",

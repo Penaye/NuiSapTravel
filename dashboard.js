@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     Toast.show(
       "Bạn là User bình thường, không có quyền truy cập trang Quản trị! Vui lòng liên hệ Admin để được cấp quyền.",
     );
-    window.location.href = "main.html";
+    window.location.href = "index.html";
     return;
   }
 

@@ -1,7 +1,7 @@
 const CACHE_NAME = "nuisap-map-v1";
 const ASSETS_TO_CACHE = [
   "/",
-  "/main.html",
+  "/index.html",
   "/style.css",
   "/script.js",
   "/config.js",
