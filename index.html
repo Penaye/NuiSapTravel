@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Bản đồ Du lịch Núi Sập</title>
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0052cc" />
+    <link
+      rel="apple-touch-icon"
+      href="https://placehold.co/192x192/0052cc/ffffff.png?text=Map+192"
+    />
+
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="config.js" defer></script>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="toast.css" />
+    <script src="toast.js" defer></script>
+
+    <style>
+      .admin-access-btn {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        z-index: 2;
+        background: white;
+        padding: 10px 15px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .admin-access-btn a,
+      .admin-access-btn span {
+        text-decoration: none;
+        color: #333;
+        font-weight: 600;
+        transition: 0.2s;
+        cursor: pointer;
+      }
+      .admin-access-btn a:hover,
+      .action-txt:hover {
+        color: #0052cc;
+      }
+      .separator {
+        border-left: 1px solid #ddd;
+        height: 16px;
+      }
+      .logout-txt {
+        color: #ef4444 !important;
+      }
+    </style>
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <!-- LOADER -->
+    <div id="global-loader">
+      <div class="spinner"></div>
+      <p style="font-weight: 600; color: #333">Đang tải dữ liệu bản đồ...</p>
+    </div>
+
+    <!-- TÌM KIẾM & VOICE SEARCH -->
+    <div id="search-container">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Tìm kiếm địa điểm..."
+          autocomplete="off"
+        />
+        <button
+          id="voice-search-btn"
+          class="voice-btn"
+          title="Tìm kiếm bằng giọng nói"
+        >
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+      </div>
+      <ul id="search-results"></ul>
+    </div>
+
+    <!-- LỌC DANH MỤC -->
+    <div id="filter-menu">
+      <button class="filter-btn active" data-filter="all">Tất cả</button>
+      <button class="filter-btn" data-filter="Du lịch">Du lịch</button>
+      <button class="filter-btn" data-filter="Quán ăn">Quán ăn</button>
+      <button class="filter-btn" data-filter="Khách sạn">Khách sạn</button>
+      <button
+        class="filter-btn"
+        data-filter="near-me"
+        style="color: #0052cc; font-weight: 700"
+      >
+        <i class="fa-solid fa-location-crosshairs"></i> Gần tôi
+      </button>
+      <!-- NÚT LỊCH TRÌNH THÔNG MINH MỚI -->
+      <button
+        id="btn-open-itinerary"
+        class="filter-btn"
+        style="
+          background: #10b981;
+          color: white;
+          border-color: #10b981;
+          margin-top: 5px;
+        "
+      >
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Gợi ý Lịch trình
+      </button>
+    </div>
+
+    <!-- ĐỔI KIỂU BẢN ĐỒ -->
+    <div id="style-switcher">
+      <button id="btn-street" class="style-btn active" data-style="streets-v12">
+        <i class="fa-solid fa-map"></i> Phố
+      </button>
+      <button
+        id="btn-satellite"
+        class="style-btn"
+        data-style="satellite-streets-v12"
+      >
+        <i class="fa-solid fa-earth-asia"></i> Vệ tinh 3D
+      </button>
+    </div>
+
+    <!-- THANH TÀI KHOẢN -->
+    <div id="auth-section" class="admin-access-btn">
+      <a
+        href="#"
+        id="btn-leaderboard-out"
+        style="color: #f59e0b; font-weight: 700; text-decoration: none"
+      >
+        <i class="fa-solid fa-trophy"></i> Xếp hạng
+      </a>
+      <div class="separator"></div>
+      <a href="auth.html">Đăng nhập / Đăng ký</a>
+    </div>
+    <!-- MAPBOX CONTAINER -->
+    <div id="map"></div>
+
+    <!-- SIDEBAR / BOTTOM SHEET BÊN PHẢI -->
+    <div id="info-sidebar" class="sidebar">
+      <div class="drag-handle"></div>
+      <!-- Thanh nắm kéo vuốt cho Mobile -->
+      <button id="close-sidebar" class="close-btn">&times;</button>
+
+      <!-- KHU VỰC CAROUSEL ẢNH -->
+      <div class="sb-header gallery-header">
+        <div class="carousel-container" id="sb-carousel"></div>
+        <button class="carousel-btn prev-btn" id="sb-carousel-prev">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button class="carousel-btn next-btn" id="sb-carousel-next">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <div class="carousel-indicators" id="sb-carousel-indicators"></div>
+      </div>
+
+      <div class="sb-content">
+        <h2 id="sb-title">Tên địa điểm</h2>
+        <span id="sb-category" class="sb-tag">Phân loại</span>
+        <span
+          id="sb-distance"
+          class="sb-tag"
+          style="
+            display: none;
+            background: #e0f2fe;
+            color: #0284c7;
+            margin-left: 8px;
+          "
+        ></span>
+
+        <div class="action-buttons">
+          <button id="btn-directions" class="btn-directions">
+            <i class="fa-solid fa-route"></i> Chỉ đường
+          </button>
+          <button id="btn-audio" class="btn-audio">
+            <i class="fa-solid fa-volume-high"></i> Nghe
+          </button>
+          <button id="btn-checkin" class="btn-checkin">
+            <i class="fa-solid fa-map-pin"></i> Check-in
+          </button>
+          <button id="btn-bookmark" class="btn-bookmark">
+            <i class="fa-regular fa-bookmark"></i> Lưu
+          </button>
+        </div>
+
+        <div class="sb-divider"></div>
+        <p id="sb-desc">Mô tả chi tiết địa điểm sẽ hiện ở đây...</p>
+
+        <div class="sb-divider" style="margin-top: 20px"></div>
+
+        <!-- ĐÁNH GIÁ -->
+        <h3 style="font-size: 18px; margin-bottom: 10px">
+          Đánh giá (<span id="review-count">0</span>)
+        </h3>
+        <div id="reviews-list" class="reviews-container"></div>
+
+        <div class="review-form">
+          <h4>Viết đánh giá của bạn</h4>
+          <input
+            type="text"
+            id="reviewer-name"
+            placeholder="Tên của bạn"
+            class="form-input-sm"
+          />
+          <select id="review-rating" class="form-input-sm">
+            <option value="5">⭐⭐⭐⭐⭐ Tuyệt vời</option>
+            <option value="4">⭐⭐⭐⭐ Rất tốt</option>
+            <option value="3">⭐⭐⭐ Bình thường</option>
+            <option value="2">⭐⭐ Tệ</option>
+            <option value="1">⭐ Rất tệ</option>
+          </select>
+          <textarea
+            id="review-text"
+            placeholder="Cảm nhận của bạn..."
+            rows="3"
+            class="form-input-sm"
+          ></textarea>
+
+          <label
+            style="
+              font-size: 13px;
+              font-weight: 600;
+              color: #475569;
+              display: block;
+              margin-bottom: 5px;
+            "
+            >Đính kèm ảnh (Tùy chọn):</label
+          >
+          <input
+            type="file"
+            id="review-image"
+            accept="image/*"
+            class="form-input-sm"
+            style="padding: 6px"
+          />
+          <div
+            id="review-upload-status"
+            style="
+              display: none;
+              font-size: 12px;
+              color: #0052cc;
+              margin-bottom: 10px;
+              font-weight: 600;
+            "
+          >
+            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải ảnh lên...
+          </div>
+          <img
+            id="review-img-preview"
+            src=""
+            style="
+              display: none;
+              max-width: 100%;
+              max-height: 150px;
+              object-fit: cover;
+              border-radius: 6px;
+              margin-bottom: 10px;
+              border: 1px solid #e2e8f0;
+            "
+          />
+
+          <button id="submit-review-btn" class="btn-primary-sm">
+            Gửi đánh giá
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL ĐỊA ĐIỂM ĐÃ LƯU -->
+    <div id="bookmarks-modal" class="bm-modal">
+      <div class="bm-content">
+        <div class="bm-header">
+          <h3>
+            <i class="fa-solid fa-heart" style="color: #ef4444"></i> Địa điểm đã
+            lưu
+          </h3>
+          <button
+            id="close-bm-modal"
+            class="close-btn"
+            style="position: static; width: 28px; height: 28px"
+          >
+            &times;
+          </button>
+        </div>
+        <ul id="bookmarks-list" class="bm-list"></ul>
+      </div>
+    </div>
+    <!-- MODAL BẢNG XẾP HẠNG (Thêm vào ngay dưới Modal Địa điểm đã lưu) -->
+    <div id="leaderboard-modal" class="bm-modal">
+      <div class="bm-content">
+        <div class="bm-header">
+          <h3>
+            <i class="fa-solid fa-trophy" style="color: #f59e0b"></i> Bảng Xếp
+            Hạng
+          </h3>
+          <button
+            id="close-lb-modal"
+            class="close-btn"
+            style="position: static; width: 28px; height: 28px"
+          >
+            &times;
+          </button>
+        </div>
+        <ul id="leaderboard-list" class="bm-list">
+          <!-- JS sẽ tự động đổ dữ liệu vào đây -->
+        </ul>
+      </div>
+    </div>
+    <!-- MODAL SMART ITINERARY (LÊN LỊCH TRÌNH V2) -->
+    <div id="itinerary-modal" class="bm-modal">
+      <div class="bm-content" style="max-width: 450px">
+        <div class="bm-header">
+          <h3 style="font-size: 17px">
+            <i
+              class="fa-solid fa-wand-magic-sparkles"
+              style="color: #10b981"
+            ></i>
+            <span id="itinerary-greeting">Thiết Kế Lịch Trình</span>
+          </h3>
+          <button
+            id="close-itinerary-modal"
+            class="close-btn"
+            style="position: static; width: 28px; height: 28px"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div style="padding: 15px 20px; overflow-y: auto">
+          <!-- Thời gian -->
+          <label class="iti-label">Bạn có bao nhiêu thời gian?</label>
+          <div class="chip-group">
+            <label class="chip">
+              <input type="radio" name="iti_time" value="2" checked hidden />
+              <span>2 tiếng</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="iti_time" value="4" hidden />
+              <span>Nửa ngày</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="iti_time" value="8" hidden />
+              <span>Cả ngày</span>
+            </label>
+          </div>
+
+          <!-- Phương tiện -->
+          <label class="iti-label">Phương tiện di chuyển?</label>
+          <div class="chip-group">
+            <label class="chip">
+              <input
+                type="radio"
+                name="iti_vehicle"
+                value="driving"
+                checked
+                hidden
+              />
+              <span>🏍️ Xe máy/Ô tô</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="iti_vehicle" value="walking" hidden />
+              <span>🚶 Đi bộ</span>
+            </label>
+          </div>
+
+          <!-- Đồng hành -->
+          <label class="iti-label">Bạn đi cùng ai?</label>
+          <div class="chip-group">
+            <label class="chip">
+              <input
+                type="radio"
+                name="iti_companion"
+                value="solo"
+                checked
+                hidden
+              />
+              <span>😎 Một mình / Cặp đôi</span>
+            </label>
+            <label class="chip">
+              <input type="radio" name="iti_companion" value="family" hidden />
+              <span>👨‍👩‍👧‍‍👦 Gia đình (Chậm rãi)</span>
+            </label>
+          </div>
+
+          <!-- Sở thích -->
+          <label class="iti-label">Trải nghiệm mong muốn (Chọn nhiều)</label>
+          <div class="chip-group">
+            <label class="chip">
+              <input
+                type="checkbox"
+                class="iti-pref"
+                value="Du lịch"
+                checked
+                hidden
+              />
+              <span>📸 Tham quan</span>
+            </label>
+            <label class="chip">
+              <input
+                type="checkbox"
+                class="iti-pref"
+                value="Quán ăn"
+                checked
+                hidden
+              />
+              <span>🍜 Ăn uống</span>
+            </label>
+            <label class="chip">
+              <input
+                type="checkbox"
+                class="iti-pref"
+                value="Khách sạn"
+                hidden
+              />
+              <span>🛌 Nghỉ ngơi</span>
+            </label>
+          </div>
+
+          <button
+            id="btn-generate-route"
+            class="btn-primary-sm"
+            style="
+              background: #10b981;
+              margin-top: 10px;
+              font-size: 15px;
+              padding: 12px;
+            "
+          >
+            <i class="fa-solid fa-route"></i> Bắt đầu chuyến đi!
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

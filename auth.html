@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <title>Xác thực - Bản đồ Núi Sập</title>
+    <link rel="stylesheet" href="toast.css" />
+    <script src="toast.js" defer></script>
+    <link rel="stylesheet" href="dashboard.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- THÊM FILE CONFIG TẠI ĐÂY -->
+    <script src="config.js" defer></script>
+    <script src="auth.js" defer></script>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f4f7fe;
+        margin: 0;
+      }
+      .auth-box {
+        background: white;
+        padding: 30px 40px;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      }
+      .tabs {
+        display: flex;
+        margin-bottom: 25px;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      .tab {
+        flex: 1;
+        padding: 12px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: 600;
+        color: #a3aed1;
+        transition: 0.2s;
+      }
+      .tab.active {
+        color: #0052cc;
+        border-bottom: 2px solid #0052cc;
+      }
+      .form-section {
+        display: none;
+      }
+      .form-section.active {
+        display: block;
+        animation: fadeIn 0.3s;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(5px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .msg {
+        font-size: 14px;
+        margin-top: 15px;
+        text-align: center;
+      }
+      .msg.error {
+        color: #ef4444;
+      }
+      .msg.success {
+        color: #166534;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-box">
+      <div class="tabs">
+        <div class="tab active" id="tab-login">Đăng nhập</div>
+        <div class="tab" id="tab-register">Đăng ký</div>
+      </div>
+
+      <div id="form-login" class="form-section active">
+        <input
+          type="email"
+          id="login-email"
+          class="form-input"
+          placeholder="Email của bạn"
+        />
+        <input
+          type="password"
+          id="login-password"
+          class="form-input"
+          placeholder="Mật khẩu"
+        />
+        <button
+          id="btn-login"
+          class="btn btn-primary"
+          style="width: 100%; justify-content: center"
+        >
+          Đăng nhập
+        </button>
+      </div>
+
+      <div id="form-register" class="form-section">
+        <input
+          type="text"
+          id="reg-name"
+          class="form-input"
+          placeholder="Họ và tên"
+        />
+        <input
+          type="email"
+          id="reg-email"
+          class="form-input"
+          placeholder="Email của bạn"
+        />
+        <input
+          type="password"
+          id="reg-password"
+          class="form-input"
+          placeholder="Mật khẩu (ít nhất 6 ký tự)"
+        />
+        <button
+          id="btn-register"
+          class="btn btn-primary"
+          style="width: 100%; justify-content: center"
+        >
+          Tạo tài khoản
+        </button>
+      </div>
+
+      <div id="auth-msg" class="msg"></div>
+
+      <div style="margin-top: 20px; text-align: center">
+        <a
+          href="main.html"
+          style="font-size: 14px; color: #666; text-decoration: none"
+          >← Quay lại bản đồ</a
+        >
+      </div>
+    </div>
+  </body>
+</html>

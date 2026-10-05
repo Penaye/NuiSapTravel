@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <title>Quản lý - Bản đồ Núi Sập</title>
+    <link rel="stylesheet" href="dashboard.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- CẤU HÌNH & CÁC MODULE CHỨC NĂNG -->
+    <script src="config.js" defer></script>
+    <script src="dashboardMap.js" defer></script>
+    <script src="dashboardAnalytics.js" defer></script>
+    <script src="dashboardLocations.js" defer></script>
+    <script src="dashboardReviews.js" defer></script>
+    <script src="dashboardUsers.js" defer></script>
+    <script src="dashboard.js" defer></script>
+
+    <!-- Toast & CSS Inline nhỏ gọn -->
+    <link rel="stylesheet" href="toast.css" />
+    <script src="toast.js" defer></script>
+    <style>
+      .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+      .chart-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+      .chart-card h4 {
+        margin-bottom: 15px;
+        color: var(--text-dark);
+        font-size: 16px;
+      }
+      .chart-container {
+        position: relative;
+        height: 280px;
+        width: 100%;
+      }
+
+      /* Style mới cho Grid Preview Ảnh */
+      .gallery-preview {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .gallery-preview img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      .gallery-preview .img-wrap {
+        position: relative;
+      }
+      .gallery-preview .remove-img-btn {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="dashboard-container">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <h3><i class="fa-solid fa-map-location-dot"></i> NÚI SẬP MNG</h3>
+        </div>
+        <ul class="nav-links">
+          <li class="nav-item active" data-target="overview">
+            <i class="fa-solid fa-chart-pie"></i> Tổng quan
+          </li>
+          <li class="nav-item" data-target="manage-locations">
+            <i class="fa-solid fa-location-dot"></i> Quản lý địa điểm
+          </li>
+          <li class="nav-item role-manager-only" data-target="reviews">
+            <i class="fa-solid fa-star"></i> Đánh giá khách
+          </li>
+          <li class="nav-item role-admin-only" data-target="approve-locations">
+            <i class="fa-solid fa-check-to-slot"></i> Duyệt địa điểm
+          </li>
+          <li class="nav-item role-admin-only" data-target="manage-users">
+            <i class="fa-solid fa-users"></i> Quản lý tài khoản
+          </li>
+        </ul>
+      </aside>
+
+      <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+      <main class="main-content">
+        <header class="top-header">
+          <div class="header-left">
+            <button id="mobile-menu-btn" class="menu-toggle">
+              <i class="fa-solid fa-bars"></i>
+            </button>
+            <h2 id="page-title">Tổng quan</h2>
+          </div>
+
+          <div class="header-right">
+            <a
+              href="main.html"
+              class="btn btn-outline"
+              style="margin-right: 15px"
+            >
+              <i class="fa-solid fa-map"></i> Ra Bản Đồ
+            </a>
+            <span class="user-role-badge" id="current-role-badge"
+              >Đang tải...</span
+            >
+            <div class="user-profile">
+              <span id="user-email">Đang tải...</span>
+            </div>
+            <button id="logout-btn" class="btn btn-outline">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
+        </header>
+
+        <div class="content-wrapper">
+          <section id="view-overview" class="view-section active">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <i class="fa-solid fa-map-pin stat-icon"></i>
+                <div class="stat-info">
+                  <h3>Tổng số địa điểm</h3>
+                  <p class="stat-num" id="stat-location-count">0</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <i
+                  class="fa-solid fa-comments stat-icon"
+                  style="color: #10b981; background: #ecfdf5"
+                ></i>
+                <div class="stat-info">
+                  <h3>Lượt đánh giá</h3>
+                  <p class="stat-num" id="stat-review-count">0</p>
+                </div>
+              </div>
+              <div class="stat-card">
+                <i
+                  class="fa-solid fa-star stat-icon"
+                  style="color: #f59e0b; background: #fffbeb"
+                ></i>
+                <div class="stat-info">
+                  <h3>Đánh giá trung bình</h3>
+                  <p class="stat-num" id="stat-avg-rating">0.0 ⭐</p>
+                </div>
+              </div>
+            </div>
+            <div class="charts-grid">
+              <div class="chart-card">
+                <h4>
+                  <i class="fa-solid fa-chart-pie"></i> Tỉ lệ phân loại địa điểm
+                </h4>
+                <div class="chart-container">
+                  <canvas id="categoryChart"></canvas>
+                </div>
+              </div>
+              <div class="chart-card">
+                <h4>
+                  <i class="fa-solid fa-chart-column"></i> Địa điểm thêm mới gần
+                  đây
+                </h4>
+                <div class="chart-container">
+                  <canvas id="monthlyChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="view-manage-locations" class="view-section">
+            <div class="section-header">
+              <h3>Danh sách địa điểm</h3>
+              <button id="add-location-btn" class="btn btn-primary">
+                <i class="fa-solid fa-plus"></i> Thêm Địa Điểm
+              </button>
+            </div>
+            <div class="table-container">
+              <table class="data-table" id="location-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Tên địa điểm</th>
+                    <th>Phân loại</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <div class="pagination-controls" id="loc-pagination">
+                <button class="btn btn-outline btn-prev" disabled>Trước</button>
+                <span class="page-info">Trang 1 / 1</span>
+                <button class="btn btn-outline btn-next" disabled>Sau</button>
+              </div>
+            </div>
+          </section>
+
+          <section
+            id="view-approve-locations"
+            class="view-section role-admin-only"
+          >
+            <div class="section-header">
+              <h3>Duyệt địa điểm (Đang chờ)</h3>
+            </div>
+            <div class="table-container">
+              <table class="data-table" id="approve-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Tên địa điểm</th>
+                    <th>Phân loại</th>
+                    <th>ID Người đăng</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <div class="pagination-controls" id="approve-pagination">
+                <button class="btn btn-outline btn-prev" disabled>Trước</button>
+                <span class="page-info">Trang 1 / 1</span>
+                <button class="btn btn-outline btn-next" disabled>Sau</button>
+              </div>
+            </div>
+          </section>
+
+          <section id="view-reviews" class="view-section role-manager-only">
+            <div class="section-header">
+              <h3>Danh sách Đánh giá của khách</h3>
+            </div>
+            <div class="table-container">
+              <table class="data-table" id="reviews-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Địa điểm</th>
+                    <th>Khách (Tên)</th>
+                    <th>Chất lượng</th>
+                    <th>Nội dung bình luận</th>
+                    <th>Xóa</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <div class="pagination-controls" id="review-pagination">
+                <button class="btn btn-outline btn-prev" disabled>Trước</button>
+                <span class="page-info">Trang 1 / 1</span>
+                <button class="btn btn-outline btn-next" disabled>Sau</button>
+              </div>
+            </div>
+          </section>
+
+          <section id="view-manage-users" class="view-section role-admin-only">
+            <div class="section-header">
+              <h3>Quản lý Tài khoản & Phân quyền</h3>
+            </div>
+            <div class="table-container">
+              <table class="data-table" id="users-table">
+                <thead>
+                  <tr>
+                    <th>ID Tài khoản</th>
+                    <th>Chức vụ hiện tại</th>
+                    <th>Hành động (Phân quyền)</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <div class="pagination-controls" id="user-pagination">
+                <button class="btn btn-outline btn-prev" disabled>Trước</button>
+                <span class="page-info">Trang 1 / 1</span>
+                <button class="btn btn-outline btn-next" disabled>Sau</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- MODAL THÊM / SỬA ĐỊA ĐIỂM -->
+    <div id="location-modal" class="modal">
+      <div class="modal-content" style="max-width: 600px">
+        <div class="modal-header">
+          <h3 id="modal-title">Thêm Địa Điểm Mới</h3>
+          <button
+            id="close-modal-btn"
+            class="btn-icon"
+            style="font-size: 24px; line-height: 1"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="loc-id" value="" />
+          <input
+            type="text"
+            id="loc-name"
+            class="form-input"
+            placeholder="Tên địa điểm (*)"
+            required
+          />
+          <select id="loc-category" class="form-input" required>
+            <option value="1">Du lịch</option>
+            <option value="2">Quán ăn</option>
+            <option value="3">Khách sạn</option>
+          </select>
+          <label
+            style="
+              font-size: 14px;
+              font-weight: 600;
+              color: var(--text-dark);
+              margin-bottom: 8px;
+              display: block;
+            "
+          >
+            Click vào bản đồ để chọn tọa độ (*):
+          </label>
+          <div
+            id="mini-map"
+            style="
+              width: 100%;
+              height: 250px;
+              border-radius: 6px;
+              border: 1px solid #ccc;
+              margin-bottom: 15px;
+            "
+          ></div>
+          <div style="display: flex; gap: 10px">
+            <input
+              type="number"
+              id="loc-lat"
+              class="form-input"
+              placeholder="Vĩ độ (Tự điền)"
+              step="any"
+              required
+              readonly
+              style="background-color: #f1f5f9; cursor: not-allowed"
+            />
+            <input
+              type="number"
+              id="loc-lng"
+              class="form-input"
+              placeholder="Kinh độ (Tự điền)"
+              step="any"
+              required
+              readonly
+              style="background-color: #f1f5f9; cursor: not-allowed"
+            />
+          </div>
+
+          <label
+            style="
+              font-size: 14px;
+              font-weight: 600;
+              color: var(--text-dark);
+              margin-bottom: 8px;
+              display: block;
+            "
+          >
+            Ảnh địa điểm (Chọn nhiều ảnh):
+          </label>
+          <!-- THÊM THUỘC TÍNH MULTIPLE -->
+          <input
+            type="file"
+            id="loc-image-file"
+            class="form-input"
+            accept="image/*"
+            multiple
+          />
+
+          <!-- KHUNG PREVIEW DẠNG LƯỚI -->
+          <div id="image-preview-container" class="gallery-preview"></div>
+
+          <div
+            id="upload-status"
+            style="
+              font-size: 13px;
+              color: #0052cc;
+              margin-bottom: 10px;
+              display: none;
+              font-weight: 600;
+            "
+          >
+            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải ảnh lên hệ
+            thống...
+          </div>
+
+          <textarea
+            id="loc-desc"
+            class="form-input"
+            placeholder="Mô tả chi tiết..."
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="modal-footer">
+          <button id="cancel-modal-btn" class="btn btn-outline">Hủy</button>
+          <button id="save-location-btn" class="btn btn-primary">
+            Lưu Địa Điểm
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
