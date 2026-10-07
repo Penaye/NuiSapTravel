@@ -1,6 +1,13 @@
 /* ========================================= */
-/* BASE & BẢN ĐỒ                             */
+/* CSS RESET & BASE                          */
 /* ========================================= */
+/* Reset box-sizing để sửa dứt điểm lỗi dính lề, tràn lề phải */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -8,6 +15,7 @@ body {
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
   overflow: hidden;
+  background-color: #f8fafc;
 }
 
 #map {
@@ -53,82 +61,49 @@ body {
 }
 
 /* ========================================= */
-/* MENU LỌC ĐỊA ĐIỂM                         */
+/* THANH TÌM KIẾM VÀ MENU 3 GẠCH (ĐÃ TỐI ƯU) */
 /* ========================================= */
-#filter-menu {
+.top-control-group {
   position: absolute;
   top: 15px;
   left: 15px;
-  z-index: 2;
+  right: 15px;
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+  align-items: flex-start;
+}
+
+#search-container {
+  flex: 1; /* Chiếm toàn bộ không gian còn dư, không bao giờ đè nút 3 gạch */
+  position: relative;
   background: white;
-  padding: 10px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.filter-btn {
-  padding: 8px 12px;
-  cursor: pointer;
-  border: 1px solid #ddd;
-  background: #f8f8f8;
-  border-radius: 4px;
-  text-align: left;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  display: flex;
   align-items: center;
-  gap: 8px;
-}
-.filter-btn:hover {
-  background: #e9ecef;
-}
-.filter-btn.active {
-  background: #0052cc;
-  color: white;
-  border-color: #0052cc;
+  height: 46px;
 }
 
-/* ========================================= */
-/* THANH TÌM KIẾM & VOICE SEARCH             */
-/* ========================================= */
-#search-container {
-  position: absolute;
-  top: 15px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 3;
-  width: 90%;
-  max-width: 400px;
+#search-input {
+  border: none;
+  outline: none;
+  flex: 1;
+  padding: 0 40px 0 10px; /* Chừa lề cho icon search và mic */
+  font-size: 15px;
+  background: transparent;
+  width: 100%;
 }
-.search-box {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: white;
-  border-radius: 24px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
+
 .search-icon {
-  position: absolute;
-  left: 16px;
   color: #64748b;
   font-size: 16px;
+  margin-left: 12px;
 }
-#search-input {
-  width: 100%;
-  padding: 14px 45px 14px 40px; /* Chừa 45px bên phải cho nút Mic */
-  border: none;
-  font-size: 15px;
-  outline: none;
-  background: transparent;
-}
+
 .voice-btn {
   position: absolute;
-  right: 12px;
+  right: 8px;
   background: none;
   border: none;
   color: #64748b;
@@ -136,17 +111,15 @@ body {
   cursor: pointer;
   padding: 4px;
   transition: 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .voice-btn:hover {
   color: #0052cc;
 }
 .voice-btn.listening {
-  color: #ef4444; /* Màu đỏ báo hiệu đang thu âm */
+  color: #ef4444;
   animation: pulse-mic 1.5s infinite;
 }
+
 @keyframes pulse-mic {
   0% {
     transform: scale(1);
@@ -163,12 +136,16 @@ body {
 }
 
 #search-results {
+  position: absolute;
+  top: 55px; /* Rớt xuống dưới thanh tìm kiếm */
+  left: 0;
+  width: 100%;
   list-style: none;
-  margin: 8px 0 0 0;
+  margin: 0;
   padding: 0;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   max-height: 250px;
   overflow-y: auto;
   display: none;
@@ -187,12 +164,72 @@ body {
   background: #f8fafc;
   color: #0052cc;
 }
-#search-results li:last-child {
-  border-bottom: none;
+
+/* Nút 3 gạch */
+.filter-toggle-btn {
+  background: white;
+  border: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  color: #333;
+  cursor: pointer;
+  flex-shrink: 0; /* Cấm co bóp kích thước */
+}
+
+/* Menu Dropdown Lọc */
+.filter-dropdown {
+  position: absolute;
+  top: 70px;
+  right: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 999;
+  width: 170px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+.filter-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.filter-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.filter-btn:hover,
+.filter-btn.active {
+  background: #f1f5f9;
+  color: #0052cc;
+  font-weight: 700;
 }
 
 /* ========================================= */
-/* SIDEBAR (DESKTOP) / BOTTOM SHEET (MOBILE) */
+/* SIDEBAR (DESKTOP)                         */
 /* ========================================= */
 .sidebar {
   position: absolute;
@@ -212,7 +249,6 @@ body {
 .sidebar.open {
   transform: translateX(0);
 }
-
 .drag-handle {
   display: none;
   width: 40px;
@@ -221,7 +257,6 @@ body {
   border-radius: 10px;
   margin: 10px auto;
 }
-
 .close-btn {
   position: absolute;
   top: 15px;
@@ -240,44 +275,11 @@ body {
   color: #333;
   backdrop-filter: blur(4px);
   z-index: 11;
-  transition: background 0.2s;
+  transition: 0.2s;
 }
 .close-btn:hover {
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-/* MOBILE RESPONSIVE - CHUYỂN THÀNH BOTTOM SHEET */
-@media (max-width: 768px) {
-  .sidebar {
-    top: auto;
-    bottom: 0;
-    right: 0;
-    left: 0;
-    max-width: 100%;
-    height: 85vh;
-    border-radius: 20px 20px 0 0;
-    transform: translateY(100%);
-  }
-  .sidebar.open {
-    transform: translateY(0);
-  }
-  .drag-handle {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 12;
-  }
-  .gallery-header {
-    margin-top: 25px;
-  }
-  .filter-btn[data-filter="Du lịch"],
-  .filter-btn[data-filter="Quán ăn"],
-  .filter-btn[data-filter="Khách sạn"] {
-    display: none;
-  }
 }
 
 /* ========================================= */
@@ -318,10 +320,6 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: background 0.3s;
-}
-.carousel-btn:hover {
-  background: rgba(0, 0, 0, 0.9);
 }
 .prev-btn {
   left: 10px;
@@ -329,7 +327,6 @@ body {
 .next-btn {
   right: 10px;
 }
-
 .carousel-indicators {
   position: absolute;
   bottom: 10px;
@@ -344,8 +341,6 @@ body {
   height: 8px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  transition: background 0.3s;
 }
 .indicator.active {
   background: #fff;
@@ -360,7 +355,8 @@ body {
   font-size: 22px;
   color: #1a1a1a;
 }
-.sb-tag {
+.sb-tag,
+.sb-distance-badge {
   display: inline-block;
   background: #eef2ff;
   color: #4f46e5;
@@ -368,11 +364,6 @@ body {
   border-radius: 16px;
   font-size: 13px;
   font-weight: 600;
-  margin-bottom: 20px;
-}
-.sb-divider {
-  height: 1px;
-  background: #eaeaea;
   margin-bottom: 20px;
 }
 #sb-desc {
@@ -383,13 +374,10 @@ body {
 }
 
 /* ========================================= */
-/* KHU VỰC ĐÁNH GIÁ (REVIEWS)                */
+/* REVIEWS & FORM                            */
 /* ========================================= */
-.reviews-container {
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 20px;
-  padding-right: 5px;
+.reviews-section {
+  margin-top: 20px;
 }
 .review-item {
   background: #f8fafc;
@@ -417,17 +405,13 @@ body {
   font-size: 14px;
   color: #475569;
   margin: 0;
-  line-height: 1.4;
 }
-
 .review-image-display {
-  display: block;
-  max-width: 100%;
+  width: 100%;
   max-height: 150px;
   object-fit: cover;
   border-radius: 8px;
   margin-top: 8px;
-  border: 1px solid #e2e8f0;
 }
 
 .review-form {
@@ -435,58 +419,40 @@ body {
   padding: 15px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
+  margin-bottom: 15px;
 }
-.review-form h4 {
-  margin: 0 0 12px 0;
-  font-size: 15px;
-  color: #1e293b;
-}
-.form-input-sm {
+.form-input {
   width: 100%;
   padding: 10px;
   margin-bottom: 10px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   font-size: 14px;
-  box-sizing: border-box;
+  font-family: inherit;
 }
-.form-input-sm:focus {
-  outline: none;
-  border-color: #0052cc;
-}
+.btn-primary,
 .btn-primary-sm {
-  width: 100%;
-  padding: 10px;
   background: #0052cc;
   color: white;
   border: none;
+  padding: 12px;
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
   transition: 0.2s;
 }
-.btn-primary-sm:hover {
-  background: #003d99;
-}
-.btn-primary-sm:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-}
 
 /* ========================================= */
-/* NÚT CHỨC NĂNG (HÀNH ĐỘNG)                 */
+/* NÚT HÀNH ĐỘNG (ACTION BUTTONS)            */
 /* ========================================= */
-.action-buttons {
+.sb-actions {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap; /* Tự động rớt dòng tạo lưới 2x2 */
+  margin: 20px 0;
+  flex-wrap: wrap;
 }
-.btn-directions,
-.btn-bookmark,
-.btn-audio,
-.btn-checkin {
-  flex: 1 1 45%; /* Chiếm 45% chiều rộng để tạo 2 cột */
+.sb-actions button {
+  flex: 1 1 45%;
   border: none;
   padding: 10px;
   border-radius: 8px;
@@ -497,136 +463,78 @@ body {
   justify-content: center;
   align-items: center;
   gap: 6px;
-  transition: 0.2s;
-  box-sizing: border-box;
 }
-
-/* Style riêng từng nút */
-.btn-directions {
+#btn-directions {
   background: #10b981;
   color: white;
-  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
 }
-.btn-directions:hover {
-  background: #059669;
-  transform: translateY(-2px);
+#btn-audio {
+  background: #8b5cf6;
+  color: white;
 }
-
-.btn-bookmark {
+#btn-checkin {
+  background: #f43f5e;
+  color: white;
+}
+#btn-bookmark {
   background: white;
   color: #4b5563;
   border: 1px solid #cbd5e1;
 }
-.btn-bookmark:hover {
-  background: #f8fafc;
-}
-.btn-bookmark.active {
+#btn-bookmark.active {
   background: #fef3c7;
   color: #d97706;
   border-color: #fcd34d;
 }
 
-.btn-audio {
-  background: #8b5cf6;
-  color: white;
-  box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
-}
-.btn-audio:hover {
-  background: #7c3aed;
-  transform: translateY(-2px);
-}
-.btn-audio.playing {
-  background: #f59e0b;
-  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
-} /* Đổi màu cam khi đang đọc */
-
-.btn-checkin {
-  background: #f43f5e;
-  color: white;
-  box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3);
-}
-.btn-checkin:hover {
-  background: #e11d48;
-  transform: translateY(-2px);
-}
 /* ========================================= */
-/* STYLE SWITCHER (CHẾ ĐỘ BẢN ĐỒ)            */
+/* STYLE SWITCHER & LEADERBOARD              */
 /* ========================================= */
-#style-switcher {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  z-index: 2;
+.map-style-btn {
   background: white;
-  padding: 5px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: flex;
-  gap: 5px;
-}
-.style-btn {
-  padding: 8px 12px;
   border: none;
-  background: transparent;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #475569;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  font-size: 16px;
   cursor: pointer;
-  transition: 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  color: #64748b;
 }
-.style-btn:hover {
-  background: #f1f5f9;
+.map-style-btn.active {
+  color: #0052cc;
+  font-weight: bold;
 }
-.style-btn.active {
-  background: #0052cc;
-  color: white;
-}
-/* ========================================= */
-/* BẢNG XẾP HẠNG (LEADERBOARD)               */
-/* ========================================= */
+
 .lb-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 12px 15px;
   border-bottom: 1px solid #f1f5f9;
-  transition: 0.2s;
-}
-.lb-item:hover {
-  background: #f8fafc;
 }
 .lb-rank {
-  font-size: 16px;
-  font-weight: 800;
   width: 35px;
   text-align: center;
-  color: #64748b;
+  font-weight: 800;
 }
 .lb-rank-1 {
   color: #fbbf24;
   font-size: 20px;
-  text-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
-} /* Vàng */
+}
 .lb-rank-2 {
   color: #94a3b8;
   font-size: 18px;
-} /* Bạc */
+}
 .lb-rank-3 {
   color: #b45309;
   font-size: 18px;
-} /* Đồng */
-
+}
 .lb-info {
   flex: 1;
   margin-left: 10px;
 }
 .lb-name {
   font-weight: 600;
-  color: #1e293b;
   margin: 0;
   font-size: 14px;
 }
@@ -637,11 +545,10 @@ body {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
-  box-shadow: 0 2px 5px rgba(79, 70, 229, 0.15);
 }
 
 /* ========================================= */
-/* MODAL CHUNG (CHO BOOKMARK & LEADERBOARD)  */
+/* MODAL CHUNG                               */
 /* ========================================= */
 .bm-modal {
   position: fixed;
@@ -681,24 +588,21 @@ body {
 }
 .bm-header h3 {
   margin: 0;
+  font-size: 18px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 18px;
 }
 .bm-list {
   padding: 15px;
   overflow-y: auto;
-  flex: 1;
   list-style: none;
   margin: 0;
 }
 
-/* ========================================= */
-/* ĐÁNH DẤU LỊCH TRÌNH (SMART ITINERARY)     */
-/* ========================================= */
+/* SMART ITINERARY */
 .itinerary-marker {
-  background-color: #10b981;
+  background: #10b981;
   color: white;
   width: 28px;
   height: 28px;
@@ -711,68 +615,65 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
   font-size: 13px;
   cursor: pointer;
-  transition: 0.2s;
   z-index: 10;
 }
-.itinerary-marker:hover {
-  transform: scale(1.1);
-  background-color: #059669;
-}
-
-/* ========================================= */
-/* UI LỊCH TRÌNH THÔNG MINH (CHIPS DESIGN)   */
-/* ========================================= */
 .iti-label {
   font-weight: 700;
   font-size: 13px;
+  margin: 15px 0 8px;
   display: block;
-  margin-top: 15px;
-  margin-bottom: 8px;
   color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
-.iti-label:first-child {
-  margin-top: 0;
-}
-
 .chip-group {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 5px;
-}
-.chip {
-  cursor: pointer;
 }
 .chip span {
-  display: inline-block;
   padding: 8px 14px;
   background: #f1f5f9;
   color: #64748b;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 600;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
+  cursor: pointer;
 }
-.chip:hover span {
-  background: #e2e8f0;
-}
-/* Trạng thái được chọn */
 .chip input:checked + span {
-  background: #ecfdf5; /* Xanh lá nhạt */
-  color: #059669; /* Xanh lá đậm */
-  border-color: #34d399;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #34d399;
 }
+
 /* ========================================= */
-/* TỐI ƯU GIAO DIỆN DI ĐỘNG (VIP PRO APP)    */
+/* TỐI ƯU GIAO DIỆN DI ĐỘNG CHUẨN VIP PRO    */
+/* (Chứa toàn bộ Fix cho Trang chủ & Quản trị)*/
 /* ========================================= */
 @media (max-width: 768px) {
   /* --- 1. TRANG BẢN ĐỒ (MAP VIEW) --- */
+  .sidebar {
+    top: auto;
+    bottom: 0;
+    max-width: 100%;
+    height: 85vh;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%);
+  }
+  .sidebar.open {
+    transform: translateY(0);
+  }
+  .drag-handle {
+    display: block;
+  }
+  .gallery-header {
+    margin-top: 15px;
+  }
 
-  /* Biến thanh tài khoản thành Bottom Navigation (Giống Shopee/Grab) */
+  .mapboxgl-ctrl-bottom-left {
+    bottom: 75px !important;
+    z-index: 10;
+  }
+
+  /* Navbar Đáy (Bottom Navigation) */
   #auth-section.admin-access-btn {
     position: fixed;
     bottom: 0;
@@ -783,43 +684,30 @@ body {
     border-radius: 20px 20px 0 0 !important;
     box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08) !important;
     padding: 12px 5px !important;
-    padding-bottom: env(
-      safe-area-inset-bottom,
-      15px
-    ) !important; /* Chống lẹm tai thỏ iPhone */
+    padding-bottom: env(safe-area-inset-bottom, 15px) !important;
     display: flex !important;
     justify-content: space-around !important;
     align-items: center;
     z-index: 2000;
   }
-
-  /* Xóa các vạch kẻ dọc phân cách */
   #auth-section .separator {
     display: none !important;
   }
-
-  /* Đổi các nút thành dạng Cột (Icon ở trên to, chữ ở dưới nhỏ) */
   #auth-section a,
   #auth-section span {
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    justify-content: center;
     gap: 4px;
     font-size: 10px !important;
-    color: #64748b !important; /* Xám nhạt hiện đại */
+    color: #64748b !important;
     flex: 1;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
-
-  /* Phóng to Icon */
   #auth-section i {
     font-size: 18px !important;
     margin-bottom: 2px;
   }
-
-  /* Nhấn mạnh màu sắc cho các nút quan trọng */
   #btn-leaderboard-in,
   #btn-leaderboard-out {
     color: #f59e0b !important;
@@ -828,74 +716,94 @@ body {
   #btn-leaderboard-out i {
     color: #f59e0b !important;
   }
-
-  a[href="dashboard.html"] {
-    color: #10b981 !important;
-  }
+  a[href="dashboard.html"],
   a[href="dashboard.html"] i {
     color: #10b981 !important;
   }
-
-  a[href="profile.html"] {
-    color: #3b82f6 !important;
-  }
+  a[href="profile.html"],
   a[href="profile.html"] i {
     color: #3b82f6 !important;
   }
 
-  /* Đẩy logo Mapbox lên cao để không bị Bottom Bar đè */
-  .mapboxgl-ctrl-bottom-left {
-    bottom: 70px !important;
-    z-index: 10;
+  /* --- 2. TRANG QUẢN TRỊ & PROFILE FIX --- */
+
+  /* Sửa lỗi dính lề phải */
+  body,
+  .admin-container,
+  .admin-main {
+    width: 100vw !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important; /* Khóa cuộn ngang toàn trang */
   }
-
-  /* --- 2. TRANG QUẢN TRỊ (DASHBOARD) --- */
-
-  /* Ép layout ngang thành dọc */
   .admin-container {
     flex-direction: column !important;
   }
+  .admin-main {
+    padding: 15px !important;
+  }
 
-  /* Chuyển Sidebar thành Menu trượt ngang vuốt bằng tay ở trên cùng */
+  /* Chống rớt chữ toàn diện (Sidebar, Nút chức năng, Header) */
   .admin-sidebar {
     width: 100% !important;
     height: auto !important;
     position: relative !important;
-    padding: 10px !important;
-    overflow-x: auto !important; /* Cho phép vuốt ngang */
-    white-space: nowrap; /* Không cho rớt dòng */
-    border-right: none !important;
+    padding: 10px 15px !important;
+    overflow-x: auto !important; /* Cho phép menu cuộn ngang */
+    white-space: nowrap !important;
     border-bottom: 1px solid #e2e8f0;
     background: white;
+    -webkit-overflow-scrolling: touch;
   }
-
-  /* Giấu logo to để tiết kiệm không gian */
   .admin-sidebar .admin-logo {
     display: none !important;
   }
-
-  /* Vuốt lại các nút menu cho thành hình viên thuốc */
   .admin-menu {
     display: flex !important;
     flex-direction: row !important;
     gap: 10px;
     margin: 0 !important;
+    padding: 0 !important;
+    flex-wrap: nowrap !important;
   }
-
   .admin-menu li {
-    margin-bottom: 0 !important;
+    margin: 0 !important;
     padding: 8px 15px !important;
     background: #f1f5f9;
     border-radius: 20px;
+    flex-shrink: 0 !important; /* KIÊN QUYẾT CẤM CO CHỮ */
+  }
+  .admin-header-actions,
+  .admin-header,
+  .header-actions {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 10px;
+    overflow-x: auto;
   }
 
-  /* Nới rộng khu vực chính */
-  .admin-main {
+  /* KIÊN QUYẾT cấm rớt chữ ở các nút chức năng (Ra bản đồ, Admin, v.v.) */
+  .btn,
+  .action-btn,
+  .admin-btn,
+  .admin-menu a,
+  .admin-header-actions a,
+  .admin-header-actions button {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Chống tràn Bảng dữ liệu */
+  .table-responsive,
+  .data-table-wrapper,
+  table {
+    display: block !important;
     width: 100% !important;
-    padding: 15px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important; /* Cấm bảng rớt chữ xuống dòng */
+    -webkit-overflow-scrolling: touch;
   }
 
-  /* Ép tất cả các thẻ thống kê, biểu đồ xếp chồng lên nhau thành 1 cột */
+  /* Ép thẻ dọc */
   .stats-grid,
   .charts-grid,
   .dashboard-grid {
@@ -903,159 +811,9 @@ body {
     flex-direction: column !important;
     gap: 15px !important;
   }
-
   .stat-card,
   .chart-card {
     width: 100% !important;
     margin: 0 !important;
-  }
-}
-
-/* ========================================= */
-/* THANH TÌM KIẾM VÀ MENU LỌC SỔ XUỐNG       */
-/* ========================================= */
-.top-control-group {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  right: 15px;
-  display: flex;
-  gap: 10px;
-  z-index: 1000;
-  align-items: flex-start;
-}
-
-#search-container {
-  flex: 1;
-  position: relative;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  height: 46px; /* Cân bằng với chiều cao nút 3 gạch */
-}
-
-#search-input {
-  border: none;
-  outline: none;
-  flex: 1;
-  padding: 0 10px;
-  font-size: 15px;
-  background: transparent;
-}
-
-#search-results {
-  top: 55px; /* Đẩy kết quả tìm kiếm rớt xuống dưới, không đè nút */
-  width: 100%;
-}
-
-.filter-toggle-btn {
-  background: white;
-  border: none;
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 20px;
-  color: #333;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: 0.2s;
-}
-
-/* Menu Sổ xuống (Dropdown) */
-.filter-dropdown {
-  position: absolute;
-  top: 70px; /* Nằm ngay dưới nút 3 gạch */
-  right: 15px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  z-index: 999;
-  width: 170px;
-
-  /* Hiệu ứng mượt mà khi ẩn/hiện */
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
-}
-
-.filter-dropdown.show {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-}
-
-.filter-dropdown .filter-btn {
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.filter-dropdown .filter-btn:hover,
-.filter-dropdown .filter-btn.active {
-  background: #f1f5f9;
-  color: #0052cc;
-  font-weight: 700;
-}
-
-/* ========================================= */
-/* FIX LỖI GIAO DIỆN DI ĐỘNG                 */
-/* ========================================= */
-
-@media (max-width: 768px) {
-  /* 1. Sửa lỗi thanh tìm kiếm và nút 3 gạch đè nhau */
-  .top-control-group {
-    display: flex;
-    justify-content: space-between; /* Đẩy 2 phần tử ra xa nhau */
-    align-items: flex-start;
-    gap: 10px; /* Tạo khoảng cách 10px giữa thanh tìm kiếm và nút 3 gạch */
-    width: calc(100% - 30px); /* Điều chỉnh chiều rộng tổng thể, trừ đi lề */
-  }
-
-  #search-container {
-    flex: 1; /* Cho phép thanh tìm kiếm chiếm phần không gian còn lại */
-    /* Các thuộc tính khác giữ nguyên */
-  }
-
-  /* 2. Sửa lỗi chữ bị rớt dòng trong các nút chức năng ở trang quản trị */
-  /* Thay thế '.admin-header-actions .btn' bằng class thực tế của các nút (ví dụ: "Ra bản đồ", "Admin") */
-  .admin-header-actions .btn,
-  .admin-header-actions a,
-  .action-btn {
-    white-space: nowrap !important; /* Ép chữ nằm trên một hàng */
-  }
-
-  /* 3. Sửa lỗi nội dung dính lề phải trang quản trị */
-  .admin-main {
-    padding: 15px !important; /* Đảm bảo có khoảng đệm 15px ở tất cả các cạnh */
-    width: 100% !important;
-    box-sizing: border-box; /* Đảm bảo padding không làm tăng tổng chiều rộng */
-  }
-
-  /* Bổ sung: Xử lý bảng dữ liệu bị tràn (nếu có) */
-  .table-responsive,
-  .table-container {
-    overflow-x: auto; /* Cho phép cuộn ngang nếu bảng quá rộng */
-    -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iOS */
-    width: 100%;
   }
 }
