@@ -1,7 +1,6 @@
 /* ========================================= */
 /* CSS RESET & BASE                          */
 /* ========================================= */
-/* Reset box-sizing để sửa dứt điểm lỗi dính lề, tràn lề phải */
 *,
 *::before,
 *::after {
@@ -61,13 +60,13 @@ body {
 }
 
 /* ========================================= */
-/* THANH TÌM KIẾM VÀ MENU 3 GẠCH (ĐÃ TỐI ƯU) */
+/* THANH TÌM KIẾM VÀ MENU 3 GẠCH (MÁY TÍNH)  */
 /* ========================================= */
 .top-control-group {
   position: absolute;
   top: 15px;
   left: 15px;
-  right: 15px;
+  width: 400px; /* Thu gọn trên Máy tính để nhường chỗ cho thanh Quản trị */
   display: flex;
   gap: 10px;
   z-index: 1000;
@@ -75,7 +74,7 @@ body {
 }
 
 #search-container {
-  flex: 1; /* Chiếm toàn bộ không gian còn dư, không bao giờ đè nút 3 gạch */
+  flex: 1;
   position: relative;
   background: white;
   border-radius: 8px;
@@ -89,7 +88,7 @@ body {
   border: none;
   outline: none;
   flex: 1;
-  padding: 0 40px 0 10px; /* Chừa lề cho icon search và mic */
+  padding: 0 40px 0 10px;
   font-size: 15px;
   background: transparent;
   width: 100%;
@@ -137,7 +136,7 @@ body {
 
 #search-results {
   position: absolute;
-  top: 55px; /* Rớt xuống dưới thanh tìm kiếm */
+  top: 55px;
   left: 0;
   width: 100%;
   list-style: none;
@@ -179,14 +178,14 @@ body {
   font-size: 20px;
   color: #333;
   cursor: pointer;
-  flex-shrink: 0; /* Cấm co bóp kích thước */
+  flex-shrink: 0;
 }
 
 /* Menu Dropdown Lọc */
 .filter-dropdown {
   position: absolute;
   top: 70px;
-  right: 15px;
+  left: 245px; /* Căn thẳng hàng dưới nút 3 gạch trên Máy tính */
   background: white;
   border-radius: 8px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
@@ -229,7 +228,44 @@ body {
 }
 
 /* ========================================= */
-/* SIDEBAR (DESKTOP)                         */
+/* THANH TÀI KHOẢN (MÁY TÍNH)                */
+/* ========================================= */
+#auth-section.admin-access-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+#auth-section .separator {
+  width: 1px;
+  height: 20px;
+  background: #cbd5e1;
+}
+#auth-section a,
+#auth-section span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  transition: 0.2s;
+}
+#auth-section a:hover,
+#auth-section span:hover {
+  color: #0052cc;
+}
+
+/* ========================================= */
+/* SIDEBAR THÔNG TIN                         */
 /* ========================================= */
 .sidebar {
   position: absolute;
@@ -283,7 +319,7 @@ body {
 }
 
 /* ========================================= */
-/* CAROUSEL GALLERY                          */
+/* CAROUSEL & CONTENT                        */
 /* ========================================= */
 .gallery-header {
   position: relative;
@@ -341,6 +377,7 @@ body {
   height: 8px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
 }
 .indicator.active {
   background: #fff;
@@ -355,7 +392,7 @@ body {
   font-size: 22px;
   color: #1a1a1a;
 }
-.sb-tag,
+.sb-badge,
 .sb-distance-badge {
   display: inline-block;
   background: #eef2ff;
@@ -374,7 +411,7 @@ body {
 }
 
 /* ========================================= */
-/* REVIEWS & FORM                            */
+/* REVIEWS & ACTIONS                         */
 /* ========================================= */
 .reviews-section {
   margin-top: 20px;
@@ -442,9 +479,6 @@ body {
   transition: 0.2s;
 }
 
-/* ========================================= */
-/* NÚT HÀNH ĐỘNG (ACTION BUTTONS)            */
-/* ========================================= */
 .sb-actions {
   display: flex;
   gap: 10px;
@@ -488,7 +522,7 @@ body {
 }
 
 /* ========================================= */
-/* STYLE SWITCHER & LEADERBOARD              */
+/* CONTROLS & MODALS                         */
 /* ========================================= */
 .map-style-btn {
   background: white;
@@ -547,9 +581,6 @@ body {
   font-weight: 700;
 }
 
-/* ========================================= */
-/* MODAL CHUNG                               */
-/* ========================================= */
 .bm-modal {
   position: fixed;
   top: 0;
@@ -600,7 +631,6 @@ body {
   margin: 0;
 }
 
-/* SMART ITINERARY */
 .itinerary-marker {
   background: #10b981;
   color: white;
@@ -645,11 +675,21 @@ body {
 }
 
 /* ========================================= */
-/* TỐI ƯU GIAO DIỆN DI ĐỘNG CHUẨN VIP PRO    */
-/* (Chứa toàn bộ Fix cho Trang chủ & Quản trị)*/
+/* TỐI ƯU GIAO DIỆN DI ĐỘNG (MOBILE)         */
 /* ========================================= */
 @media (max-width: 768px) {
-  /* --- 1. TRANG BẢN ĐỒ (MAP VIEW) --- */
+  /* --- THANH TÌM KIẾM VÀ LỌC TRÊN MOBILE --- */
+  .top-control-group {
+    width: calc(
+      100% - 30px
+    ) !important; /* Mở rộng ôm trọn màn hình điện thoại */
+  }
+  .filter-dropdown {
+    left: auto !important;
+    right: 15px !important; /* Ép sát mép phải màn hình */
+  }
+
+  /* --- SIDEBAR BẢN ĐỒ THÀNH BOTTOM SHEET --- */
   .sidebar {
     top: auto;
     bottom: 0;
@@ -667,18 +707,19 @@ body {
   .gallery-header {
     margin-top: 15px;
   }
-
   .mapboxgl-ctrl-bottom-left {
     bottom: 75px !important;
     z-index: 10;
   }
 
-  /* Navbar Đáy (Bottom Navigation) */
+  /* --- NAVBAR ĐÁY (APP STYLE) --- */
   #auth-section.admin-access-btn {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 100% !important;
     background: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: blur(15px);
     border-radius: 20px 20px 0 0 !important;
@@ -708,32 +749,14 @@ body {
     font-size: 18px !important;
     margin-bottom: 2px;
   }
-  #btn-leaderboard-in,
-  #btn-leaderboard-out {
-    color: #f59e0b !important;
-  }
-  #btn-leaderboard-in i,
-  #btn-leaderboard-out i {
-    color: #f59e0b !important;
-  }
-  a[href="dashboard.html"],
-  a[href="dashboard.html"] i {
-    color: #10b981 !important;
-  }
-  a[href="profile.html"],
-  a[href="profile.html"] i {
-    color: #3b82f6 !important;
-  }
 
-  /* --- 2. TRANG QUẢN TRỊ & PROFILE FIX --- */
-
-  /* Sửa lỗi dính lề phải */
+  /* --- TRANG QUẢN TRỊ & PROFILE --- */
   body,
   .admin-container,
   .admin-main {
     width: 100vw !important;
     max-width: 100% !important;
-    overflow-x: hidden !important; /* Khóa cuộn ngang toàn trang */
+    overflow-x: hidden !important;
   }
   .admin-container {
     flex-direction: column !important;
@@ -742,13 +765,13 @@ body {
     padding: 15px !important;
   }
 
-  /* Chống rớt chữ toàn diện (Sidebar, Nút chức năng, Header) */
+  /* Cấm rớt chữ, tràn lề sidebar quản trị */
   .admin-sidebar {
     width: 100% !important;
     height: auto !important;
     position: relative !important;
     padding: 10px 15px !important;
-    overflow-x: auto !important; /* Cho phép menu cuộn ngang */
+    overflow-x: auto !important;
     white-space: nowrap !important;
     border-bottom: 1px solid #e2e8f0;
     background: white;
@@ -770,7 +793,7 @@ body {
     padding: 8px 15px !important;
     background: #f1f5f9;
     border-radius: 20px;
-    flex-shrink: 0 !important; /* KIÊN QUYẾT CẤM CO CHỮ */
+    flex-shrink: 0 !important;
   }
   .admin-header-actions,
   .admin-header,
@@ -781,7 +804,7 @@ body {
     overflow-x: auto;
   }
 
-  /* KIÊN QUYẾT cấm rớt chữ ở các nút chức năng (Ra bản đồ, Admin, v.v.) */
+  /* Khóa cứng chữ nút chức năng */
   .btn,
   .action-btn,
   .admin-btn,
@@ -792,18 +815,18 @@ body {
     flex-shrink: 0 !important;
   }
 
-  /* Chống tràn Bảng dữ liệu */
+  /* Chống tràn bảng */
   .table-responsive,
   .data-table-wrapper,
   table {
     display: block !important;
     width: 100% !important;
     overflow-x: auto !important;
-    white-space: nowrap !important; /* Cấm bảng rớt chữ xuống dòng */
+    white-space: nowrap !important;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Ép thẻ dọc */
+  /* Chuyển cột thống kê */
   .stats-grid,
   .charts-grid,
   .dashboard-grid {
@@ -815,5 +838,231 @@ body {
   .chart-card {
     width: 100% !important;
     margin: 0 !important;
+  }
+}
+/* ========================================= */
+/* BẢN VÁ LỖI GIAO DIỆN (PC & MOBILE)        */
+/* KHÔNG XÓA CODE CŨ, CHỈ DÁN VÀO CUỐI FILE  */
+/* ========================================= */
+
+/* 1. Sửa thanh tìm kiếm & Menu PC (Không đè thanh Quản trị) */
+.top-control-group {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  width: 400px;
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+  align-items: flex-start;
+}
+#search-container {
+  flex: 1;
+  position: relative;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  height: 46px;
+}
+#search-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 0 40px 0 10px;
+  background: transparent;
+}
+.filter-dropdown {
+  position: absolute;
+  top: 70px;
+  left: 245px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 999;
+  width: 170px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+.filter-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+#auth-section.admin-access-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* 2. ÉP GIAO DIỆN MOBILE CHUẨN VIP PRO */
+@media (max-width: 768px) {
+  /* Reset tránh dính lề */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  body,
+  .admin-container,
+  .admin-main {
+    width: 100vw !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Căn lại thanh tìm kiếm Mobile */
+  .top-control-group {
+    width: calc(100% - 30px) !important;
+  }
+  .filter-dropdown {
+    left: auto !important;
+    right: 15px !important;
+  }
+
+  /* Navbar Đáy Bản Đồ */
+  #auth-section.admin-access-btn {
+    position: fixed !important;
+    bottom: 0 !important;
+    top: auto !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 100% !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(15px);
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08) !important;
+    padding: 12px 5px !important;
+    padding-bottom: env(safe-area-inset-bottom, 15px) !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center;
+    z-index: 2000;
+  }
+  #auth-section .separator {
+    display: none !important;
+  }
+  #auth-section a,
+  #auth-section span {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 4px;
+    font-size: 10px !important;
+    flex: 1;
+    text-transform: uppercase;
+  }
+  #auth-section i {
+    font-size: 18px !important;
+    margin-bottom: 2px;
+  }
+
+  /* Sửa rớt chữ & dính lề trang Quản Trị */
+  .admin-main {
+    padding: 15px !important;
+  }
+  .admin-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+    padding: 10px 15px !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    border-bottom: 1px solid #e2e8f0;
+    background: white;
+  }
+  .admin-sidebar .admin-logo {
+    display: none !important;
+  }
+  .admin-menu {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .admin-menu li {
+    margin: 0 !important;
+    padding: 8px 15px !important;
+    background: #f1f5f9;
+    border-radius: 20px;
+    flex-shrink: 0 !important;
+  }
+
+  /* CẤM RỚT CHỮ CÁC NÚT */
+  .btn,
+  .action-btn,
+  .admin-btn,
+  .admin-menu a,
+  .admin-header-actions a,
+  .admin-header-actions button {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* CẤM TRÀN BẢNG DỮ LIỆU */
+  .table-responsive,
+  .data-table-wrapper,
+  table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ========================================= */
+/* ĐIỀU CHỈNH VỊ TRÍ THANH QUẢN TRỊ / AUTH   */
+/* ========================================= */
+
+/* 1. TRÊN MÁY TÍNH (PC): Góc dưới bên phải */
+#auth-section.admin-access-btn {
+  position: absolute !important;
+  top: auto !important; /* Gỡ bỏ căn trên */
+  bottom: 25px !important; /* Căn sát đáy */
+  right: 15px !important; /* Căn lề phải */
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* 2. TRÊN ĐIỆN THOẠI: Trải dài dưới đáy (Bottom Navigation) */
+@media (max-width: 768px) {
+  #auth-section.admin-access-btn {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    width: 100% !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(15px);
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08) !important;
+    padding: 12px 5px !important;
+    padding-bottom: env(safe-area-inset-bottom, 15px) !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center;
   }
 }
