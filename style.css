@@ -1016,3 +1016,46 @@ body {
   color: #0052cc;
   font-weight: 700;
 }
+
+/* ========================================= */
+/* FIX LỖI GIAO DIỆN DI ĐỘNG                 */
+/* ========================================= */
+
+@media (max-width: 768px) {
+  /* 1. Sửa lỗi thanh tìm kiếm và nút 3 gạch đè nhau */
+  .top-control-group {
+    display: flex;
+    justify-content: space-between; /* Đẩy 2 phần tử ra xa nhau */
+    align-items: flex-start;
+    gap: 10px; /* Tạo khoảng cách 10px giữa thanh tìm kiếm và nút 3 gạch */
+    width: calc(100% - 30px); /* Điều chỉnh chiều rộng tổng thể, trừ đi lề */
+  }
+
+  #search-container {
+    flex: 1; /* Cho phép thanh tìm kiếm chiếm phần không gian còn lại */
+    /* Các thuộc tính khác giữ nguyên */
+  }
+
+  /* 2. Sửa lỗi chữ bị rớt dòng trong các nút chức năng ở trang quản trị */
+  /* Thay thế '.admin-header-actions .btn' bằng class thực tế của các nút (ví dụ: "Ra bản đồ", "Admin") */
+  .admin-header-actions .btn,
+  .admin-header-actions a,
+  .action-btn {
+    white-space: nowrap !important; /* Ép chữ nằm trên một hàng */
+  }
+
+  /* 3. Sửa lỗi nội dung dính lề phải trang quản trị */
+  .admin-main {
+    padding: 15px !important; /* Đảm bảo có khoảng đệm 15px ở tất cả các cạnh */
+    width: 100% !important;
+    box-sizing: border-box; /* Đảm bảo padding không làm tăng tổng chiều rộng */
+  }
+
+  /* Bổ sung: Xử lý bảng dữ liệu bị tràn (nếu có) */
+  .table-responsive,
+  .table-container {
+    overflow-x: auto; /* Cho phép cuộn ngang nếu bảng quá rộng */
+    -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iOS */
+    width: 100%;
+  }
+}
