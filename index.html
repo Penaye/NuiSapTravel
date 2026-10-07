@@ -2,114 +2,134 @@
 <html lang="vi">
   <head>
     <meta charset="utf-8" />
+    <!-- Khóa khung hình, tự động phóng to chữ cho điện thoại -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <!-- Chống kẹt Cache -->
     <meta
       http-equiv="Cache-Control"
       content="no-cache, no-store, must-revalidate"
     />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+
     <title>Bản đồ Du lịch Núi Sập</title>
-    <meta
-      name="viewport"
-      content="initial-scale=1,maximum-scale=1,user-scalable=no"
-    />
 
-    <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#0052cc" />
+    <!-- Thư viện FontAwesome và Mapbox -->
     <link
-      rel="apple-touch-icon"
-      href="https://placehold.co/192x192/0052cc/ffffff.png?text=Map+192"
-    />
-
-    <link
-      href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
     />
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css"
+      rel="stylesheet"
+    />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
+
+    <!-- Thư viện Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <script src="config.js" defer></script>
-    <link rel="stylesheet" href="style.css" />
-    <link rel="stylesheet" href="toast.css" />
-    <script src="toast.js" defer></script>
-
-    <style>
-      .admin-access-btn {
-        position: absolute;
-        bottom: 20px;
-        right: 20px;
-        z-index: 2;
-        background: white;
-        padding: 10px 15px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-      .admin-access-btn a,
-      .admin-access-btn span {
-        text-decoration: none;
-        color: #333;
-        font-weight: 600;
-        transition: 0.2s;
-        cursor: pointer;
-      }
-      .admin-access-btn a:hover,
-      .action-txt:hover {
-        color: #0052cc;
-      }
-      .separator {
-        border-left: 1px solid #ddd;
-        height: 16px;
-      }
-      .logout-txt {
-        color: #ef4444 !important;
-      }
-    </style>
-    <script src="script.js" defer></script>
+    <!-- CSS của dự án -->
+    <link rel="stylesheet" href="style.css?v=2" />
   </head>
+
   <body>
-    <!-- LOADER -->
-    <div id="global-loader">
-      <div class="spinner"></div>
-      <p style="font-weight: 600; color: #333">Đang tải dữ liệu bản đồ...</p>
+    <!-- 1. LOADING SCREEN -->
+    <div
+      id="global-loader"
+      style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <div style="text-align: center">
+        <i
+          class="fa-solid fa-map-location-dot fa-bounce fa-3x"
+          style="color: #0052cc"
+        ></i>
+        <h3 style="margin-top: 15px; color: #333">Đang tải dữ liệu...</h3>
+      </div>
     </div>
 
-    <!-- TÌM KIẾM & VOICE SEARCH -->
-    <div id="search-container">
-      <div class="search-box">
-        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+    <!-- 2. BẢN ĐỒ -->
+    <div id="map"></div>
+
+    <!-- Nút chuyển đổi kiểu bản đồ -->
+    <div
+      style="
+        position: absolute;
+        bottom: 85px;
+        right: 10px;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      "
+    >
+      <button
+        id="btn-street"
+        class="map-style-btn active"
+        title="Bản đồ đường phố"
+      >
+        <i class="fa-solid fa-map"></i>
+      </button>
+      <button id="btn-satellite" class="map-style-btn" title="Bản đồ vệ tinh">
+        <i class="fa-solid fa-satellite"></i>
+      </button>
+    </div>
+
+    <!-- 3. THANH TÌM KIẾM VÀ MENU 3 GẠCH (Nằm ngang nhau) -->
+    <div class="top-control-group">
+      <!-- Khung tìm kiếm -->
+      <div id="search-container">
+        <i
+          class="fa-solid fa-magnifying-glass search-icon"
+          style="color: #64748b; margin-left: 10px"
+        ></i>
         <input
           type="text"
           id="search-input"
           placeholder="Tìm kiếm địa điểm..."
           autocomplete="off"
         />
-        <button
-          id="voice-search-btn"
-          class="voice-btn"
-          title="Tìm kiếm bằng giọng nói"
-        >
+        <button id="voice-search-btn" title="Tìm kiếm bằng giọng nói">
           <i class="fa-solid fa-microphone"></i>
         </button>
+        <ul id="search-results"></ul>
       </div>
-      <ul id="search-results"></ul>
+
+      <!-- Nút 3 gạch -->
+      <button id="mobile-filter-toggle" class="filter-toggle-btn">
+        <i class="fa-solid fa-bars"></i>
+      </button>
     </div>
 
-    <!-- LỌC DANH MỤC -->
-    <div id="filter-menu">
-      <button class="filter-btn active" data-filter="all">Tất cả</button>
-      <button class="filter-btn" data-filter="Du lịch">Du lịch</button>
-      <button class="filter-btn" data-filter="Quán ăn">Quán ăn</button>
-      <button class="filter-btn" data-filter="Khách sạn">Khách sạn</button>
+    <!-- 4. KHUNG LỌC DANH MỤC (Menu sổ xuống) -->
+    <div id="filter-menu" class="filter-dropdown">
+      <button class="filter-btn active" data-filter="all">
+        <i class="fa-solid fa-border-all"></i> Tất cả
+      </button>
+      <button class="filter-btn" data-filter="Du lịch">
+        <i class="fa-solid fa-mountain-sun"></i> Du lịch
+      </button>
+      <button class="filter-btn" data-filter="Quán ăn">
+        <i class="fa-solid fa-utensils"></i> Quán ăn
+      </button>
+      <button class="filter-btn" data-filter="Khách sạn">
+        <i class="fa-solid fa-hotel"></i> Khách sạn
+      </button>
+      <div style="height: 1px; background: #e2e8f0; margin: 5px 0"></div>
       <button
         class="filter-btn"
         data-filter="near-me"
@@ -117,36 +137,16 @@
       >
         <i class="fa-solid fa-location-crosshairs"></i> Gần tôi
       </button>
-      <!-- NÚT LỊCH TRÌNH THÔNG MINH MỚI -->
       <button
         id="btn-open-itinerary"
         class="filter-btn"
-        style="
-          background: #10b981;
-          color: white;
-          border-color: #10b981;
-          margin-top: 5px;
-        "
+        style="color: #10b981; font-weight: 700"
       >
-        <i class="fa-solid fa-wand-magic-sparkles"></i> Gợi ý Lịch trình
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Lịch trình
       </button>
     </div>
 
-    <!-- ĐỔI KIỂU BẢN ĐỒ -->
-    <div id="style-switcher">
-      <button id="btn-street" class="style-btn active" data-style="streets-v12">
-        <i class="fa-solid fa-map"></i> Phố
-      </button>
-      <button
-        id="btn-satellite"
-        class="style-btn"
-        data-style="satellite-streets-v12"
-      >
-        <i class="fa-solid fa-earth-asia"></i> Vệ tinh 3D
-      </button>
-    </div>
-
-    <!-- THANH TÀI KHOẢN -->
+    <!-- 5. THANH TÀI KHOẢN (BOTTOM NAVIGATION) -->
     <div id="auth-section" class="admin-access-btn">
       <a
         href="#"
@@ -165,22 +165,19 @@
         <i class="fa-solid fa-arrow-right-to-bracket"></i> Đăng nhập
       </a>
     </div>
-    <!-- MAPBOX CONTAINER -->
-    <div id="map"></div>
 
-    <!-- SIDEBAR / BOTTOM SHEET BÊN PHẢI -->
+    <!-- 6. SIDEBAR THÔNG TIN ĐỊA ĐIỂM -->
     <div id="info-sidebar" class="sidebar">
-      <div class="drag-handle"></div>
-      <!-- Thanh nắm kéo vuốt cho Mobile -->
       <button id="close-sidebar" class="close-btn">&times;</button>
+      <div class="drag-handle"></div>
 
-      <!-- KHU VỰC CAROUSEL ẢNH -->
-      <div class="sb-header gallery-header">
-        <div class="carousel-container" id="sb-carousel"></div>
-        <button class="carousel-btn prev-btn" id="sb-carousel-prev">
+      <!-- Slider ảnh -->
+      <div class="sb-image-slider">
+        <div class="carousel" id="sb-carousel"></div>
+        <button class="carousel-btn prev" id="sb-carousel-prev">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
-        <button class="carousel-btn next-btn" id="sb-carousel-next">
+        <button class="carousel-btn next" id="sb-carousel-next">
           <i class="fa-solid fa-chevron-right"></i>
         </button>
         <div class="carousel-indicators" id="sb-carousel-indicators"></div>
@@ -188,123 +185,124 @@
 
       <div class="sb-content">
         <h2 id="sb-title">Tên địa điểm</h2>
-        <span id="sb-category" class="sb-tag">Phân loại</span>
+        <span id="sb-category" class="sb-badge">Danh mục</span>
         <span
           id="sb-distance"
-          class="sb-tag"
-          style="
-            display: none;
-            background: #e0f2fe;
-            color: #0284c7;
-            margin-left: 8px;
-          "
+          class="sb-distance-badge"
+          style="display: none"
         ></span>
 
-        <div class="action-buttons">
-          <button id="btn-directions" class="btn-directions">
-            <i class="fa-solid fa-route"></i> Chỉ đường
+        <p id="sb-desc">Mô tả địa điểm sẽ hiển thị ở đây...</p>
+
+        <!-- Các nút hành động -->
+        <div class="sb-actions">
+          <button class="btn-primary" id="btn-directions">
+            <i class="fa-solid fa-route"></i> Đường đi
           </button>
-          <button id="btn-audio" class="btn-audio">
+          <button class="btn-secondary" id="btn-audio">
             <i class="fa-solid fa-volume-high"></i> Nghe
           </button>
-          <button id="btn-checkin" class="btn-checkin">
+          <button class="btn-secondary" id="btn-checkin">
             <i class="fa-solid fa-map-pin"></i> Check-in
           </button>
-          <button id="btn-bookmark" class="btn-bookmark">
+          <button class="btn-secondary" id="btn-bookmark">
             <i class="fa-regular fa-bookmark"></i> Lưu
           </button>
         </div>
 
-        <div class="sb-divider"></div>
-        <p id="sb-desc">Mô tả chi tiết địa điểm sẽ hiện ở đây...</p>
+        <!-- Khu vực đánh giá -->
+        <div class="reviews-section">
+          <h3>
+            <i class="fa-solid fa-comments"></i> Đánh giá (<span
+              id="review-count"
+              >0</span
+            >)
+          </h3>
 
-        <div class="sb-divider" style="margin-top: 20px"></div>
+          <div class="review-form">
+            <input
+              type="text"
+              id="reviewer-name"
+              placeholder="Tên của bạn"
+              class="form-input"
+            />
+            <select id="review-rating" class="form-input">
+              <option value="5">⭐⭐⭐⭐⭐ (Tuyệt vời)</option>
+              <option value="4">⭐⭐⭐⭐ (Tốt)</option>
+              <option value="3">⭐⭐⭐ (Bình thường)</option>
+              <option value="2">⭐⭐ (Kém)</option>
+              <option value="1">⭐ (Rất tệ)</option>
+            </select>
+            <textarea
+              id="review-text"
+              placeholder="Chia sẻ trải nghiệm của bạn..."
+              class="form-input"
+              rows="3"
+            ></textarea>
 
-        <!-- ĐÁNH GIÁ -->
-        <h3 style="font-size: 18px; margin-bottom: 10px">
-          Đánh giá (<span id="review-count">0</span>)
-        </h3>
-        <div id="reviews-list" class="reviews-container"></div>
+            <label
+              for="review-image"
+              class="file-upload-label"
+              style="
+                display: inline-block;
+                margin-bottom: 10px;
+                cursor: pointer;
+                color: #0052cc;
+                font-size: 14px;
+              "
+            >
+              <i class="fa-solid fa-camera"></i> Đính kèm ảnh
+            </label>
+            <input
+              type="file"
+              id="review-image"
+              accept="image/*"
+              style="display: none"
+            />
+            <img
+              id="review-img-preview"
+              style="
+                display: none;
+                width: 100%;
+                max-height: 200px;
+                object-fit: cover;
+                border-radius: 8px;
+                margin-bottom: 10px;
+              "
+            />
+            <p
+              id="review-upload-status"
+              style="
+                display: none;
+                color: #f59e0b;
+                font-size: 13px;
+                margin-bottom: 10px;
+              "
+            >
+              <i class="fa-solid fa-spinner fa-spin"></i> Đang tải ảnh lên...
+            </p>
 
-        <div class="review-form">
-          <h4>Viết đánh giá của bạn</h4>
-          <input
-            type="text"
-            id="reviewer-name"
-            placeholder="Tên của bạn"
-            class="form-input-sm"
-          />
-          <select id="review-rating" class="form-input-sm">
-            <option value="5">⭐⭐⭐⭐⭐ Tuyệt vời</option>
-            <option value="4">⭐⭐⭐⭐ Rất tốt</option>
-            <option value="3">⭐⭐⭐ Bình thường</option>
-            <option value="2">⭐⭐ Tệ</option>
-            <option value="1">⭐ Rất tệ</option>
-          </select>
-          <textarea
-            id="review-text"
-            placeholder="Cảm nhận của bạn..."
-            rows="3"
-            class="form-input-sm"
-          ></textarea>
-
-          <label
-            style="
-              font-size: 13px;
-              font-weight: 600;
-              color: #475569;
-              display: block;
-              margin-bottom: 5px;
-            "
-            >Đính kèm ảnh (Tùy chọn):</label
-          >
-          <input
-            type="file"
-            id="review-image"
-            accept="image/*"
-            class="form-input-sm"
-            style="padding: 6px"
-          />
-          <div
-            id="review-upload-status"
-            style="
-              display: none;
-              font-size: 12px;
-              color: #0052cc;
-              margin-bottom: 10px;
-              font-weight: 600;
-            "
-          >
-            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải ảnh lên...
+            <button
+              id="submit-review-btn"
+              class="btn-primary"
+              style="width: 100%"
+            >
+              Gửi đánh giá
+            </button>
           </div>
-          <img
-            id="review-img-preview"
-            src=""
-            style="
-              display: none;
-              max-width: 100%;
-              max-height: 150px;
-              object-fit: cover;
-              border-radius: 6px;
-              margin-bottom: 10px;
-              border: 1px solid #e2e8f0;
-            "
-          />
 
-          <button id="submit-review-btn" class="btn-primary-sm">
-            Gửi đánh giá
-          </button>
+          <div id="reviews-list" class="reviews-list"></div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL ĐỊA ĐIỂM ĐÃ LƯU -->
+    <!-- 7. MODALS -->
+    <!-- Modal Địa điểm đã lưu -->
     <div id="bookmarks-modal" class="bm-modal">
       <div class="bm-content">
         <div class="bm-header">
           <h3>
-            <i class="fa-solid fa-heart" style="color: #ef4444"></i> Địa điểm đã
-            lưu
+            <i class="fa-solid fa-heart" style="color: #ef4444"></i> Đã Lưu
           </h3>
           <button
             id="close-bm-modal"
@@ -317,7 +315,8 @@
         <ul id="bookmarks-list" class="bm-list"></ul>
       </div>
     </div>
-    <!-- MODAL BẢNG XẾP HẠNG (Thêm vào ngay dưới Modal Địa điểm đã lưu) -->
+
+    <!-- Modal Bảng xếp hạng -->
     <div id="leaderboard-modal" class="bm-modal">
       <div class="bm-content">
         <div class="bm-header">
@@ -333,12 +332,11 @@
             &times;
           </button>
         </div>
-        <ul id="leaderboard-list" class="bm-list">
-          <!-- JS sẽ tự động đổ dữ liệu vào đây -->
-        </ul>
+        <ul id="leaderboard-list" class="bm-list"></ul>
       </div>
     </div>
-    <!-- MODAL SMART ITINERARY (LÊN LỊCH TRÌNH V2) -->
+
+    <!-- Modal Smart Itinerary (Lên lịch trình V2) -->
     <div id="itinerary-modal" class="bm-modal">
       <div class="bm-content" style="max-width: 450px">
         <div class="bm-header">
@@ -456,6 +454,11 @@
               margin-top: 10px;
               font-size: 15px;
               padding: 12px;
+              width: 100%;
+              border: none;
+              color: white;
+              border-radius: 8px;
+              cursor: pointer;
             "
           >
             <i class="fa-solid fa-route"></i> Bắt đầu chuyến đi!
@@ -463,5 +466,12 @@
         </div>
       </div>
     </div>
+
+    <!-- Nhúng Toast Notification -->
+    <script src="https://cdn.jsdelivr.net/gh/mickidum/toast_ui/toast.min.js"></script>
+    <!-- File cấu hình Supabase (nếu có tách riêng) -->
+    <script src="config.js?v=2"></script>
+    <!-- File Script chính (có thêm ?v=2 để tự xóa cache) -->
+    <script src="script.js?v=2"></script>
   </body>
 </html>

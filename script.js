@@ -1488,3 +1488,19 @@ document
       btnGen.disabled = false;
     }
   });
+
+// ==========================================
+// ĐIỀU KHIỂN NÚT 3 GẠCH (MENU LỌC DI ĐỘNG)
+// ==========================================
+document
+  .getElementById("mobile-filter-toggle")
+  ?.addEventListener("click", () => {
+    document.getElementById("filter-menu").classList.toggle("show");
+  });
+
+// Trải nghiệm App: Khi bấm chọn 1 Danh mục, Menu tự động thu lại
+document.querySelectorAll("#filter-menu .filter-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.getElementById("filter-menu").classList.remove("show");
+  });
+});

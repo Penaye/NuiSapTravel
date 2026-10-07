@@ -910,3 +910,109 @@ body {
     margin: 0 !important;
   }
 }
+
+/* ========================================= */
+/* THANH TÌM KIẾM VÀ MENU LỌC SỔ XUỐNG       */
+/* ========================================= */
+.top-control-group {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  right: 15px;
+  display: flex;
+  gap: 10px;
+  z-index: 1000;
+  align-items: flex-start;
+}
+
+#search-container {
+  flex: 1;
+  position: relative;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  height: 46px; /* Cân bằng với chiều cao nút 3 gạch */
+}
+
+#search-input {
+  border: none;
+  outline: none;
+  flex: 1;
+  padding: 0 10px;
+  font-size: 15px;
+  background: transparent;
+}
+
+#search-results {
+  top: 55px; /* Đẩy kết quả tìm kiếm rớt xuống dưới, không đè nút */
+  width: 100%;
+}
+
+.filter-toggle-btn {
+  background: white;
+  border: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 20px;
+  color: #333;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: 0.2s;
+}
+
+/* Menu Sổ xuống (Dropdown) */
+.filter-dropdown {
+  position: absolute;
+  top: 70px; /* Nằm ngay dưới nút 3 gạch */
+  right: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 999;
+  width: 170px;
+
+  /* Hiệu ứng mượt mà khi ẩn/hiện */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.filter-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.filter-dropdown .filter-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.filter-dropdown .filter-btn:hover,
+.filter-dropdown .filter-btn.active {
+  background: #f1f5f9;
+  color: #0052cc;
+  font-weight: 700;
+}
