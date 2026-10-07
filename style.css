@@ -1066,3 +1066,257 @@ body {
     align-items: center;
   }
 }
+
+/* ========================================= */
+/* FIX LỖI ẢNH PHÌNH TO & ĐÈ NAVBAR MOBILE   */
+/* ========================================= */
+@media (max-width: 768px) {
+  /* 1. Khóa cứng khung ảnh, tuyệt đối không cho phình to */
+  .gallery-header {
+    height: 220px !important;
+    min-height: 220px !important;
+    flex-shrink: 0 !important; /* Lệnh "phép thuật" chặn ảnh tự giãn */
+    margin-top: 20px !important;
+  }
+
+  /* 2. Chừa khoảng trống dưới cùng để không bị thanh Navbar đáy đè lên nút */
+  .sb-content {
+    padding-bottom: 90px !important;
+  }
+
+  /* 3. Chỉnh lại nút Đóng (X) cho ngay ngắn, dễ bấm */
+  .close-btn {
+    top: 15px !important;
+    right: 15px !important;
+    z-index: 50 !important;
+    width: 36px !important;
+    height: 36px !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  /* 4. Đẩy thanh kéo (drag handle) lên một chút cho đẹp */
+  .drag-handle {
+    top: 8px !important;
+  }
+}
+
+/* ========================================= */
+/* FIX LỖI GIAO DIỆN MÁY TÍNH (PC)           */
+/* ========================================= */
+
+/* 1. Ép khung ảnh Sidebar chuẩn kích thước, không tràn viền */
+.gallery-header {
+  position: relative !important;
+  width: 100% !important;
+  height: 240px !important;
+  min-height: 240px !important;
+  overflow: hidden !important;
+  background: #f0f0f0 !important;
+}
+
+.carousel-container {
+  display: flex !important;
+  flex-direction: row !important; /* Ép ảnh nằm ngang để trượt */
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.carousel-container img {
+  min-width: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+}
+
+/* 2. Xử lý Thanh chức năng góc dưới phải PC (Không đè Sidebar) */
+@media (min-width: 769px) {
+  #auth-section.admin-access-btn {
+    position: absolute !important;
+    top: auto !important;
+    bottom: 25px !important;
+    right: 15px !important;
+    width: auto !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    padding: 10px 20px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 15px !important;
+
+    /* Ép thanh này chìm xuống dưới Sidebar để không bị đè chữ */
+    z-index: 9 !important;
+  }
+
+  #auth-section a,
+  #auth-section span {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    font-size: 14px !important;
+    gap: 8px !important;
+  }
+
+  /* Nâng Sidebar lên lớp cao nhất */
+  .sidebar {
+    z-index: 1000 !important;
+  }
+}
+
+/* ========================================= */
+/* FIX DỨT ĐIỂM ẢNH KHỔNG LỒ & ĐÈ GIAO DIỆN  */
+/* ========================================= */
+
+/* 1. Ép kích thước khung ảnh (Dù dùng tên sb-image-slider hay gallery-header) */
+.sb-image-slider,
+.gallery-header {
+  position: relative !important;
+  width: 100% !important;
+  height: 240px !important;
+  min-height: 240px !important;
+  background: #f0f0f0 !important;
+  overflow: hidden !important; /* Cắt bỏ phần ảnh thừa */
+  flex-shrink: 0 !important;
+}
+
+/* 2. Dàn ảnh nằm ngang để trượt (Slide) */
+.carousel,
+.carousel-container {
+  display: flex !important;
+  flex-direction: row !important;
+  height: 100% !important;
+  width: 100% !important;
+  transition: transform 0.4s ease-in-out !important;
+}
+
+/* 3. Ép từng tấm ảnh vừa vặn với khung 240px */
+.carousel img,
+.carousel-container img {
+  min-width: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  flex-shrink: 0 !important;
+}
+
+/* 4. Đẩy Sidebar lên lớp CAO NHẤT để không bao giờ bị nút nào đè lên */
+.sidebar,
+#info-sidebar {
+  z-index: 9999 !important;
+}
+
+/* ========================================= */
+/* FIX VỊ TRÍ NÚT CHUYỂN ẢNH (PREV / NEXT)   */
+/* ========================================= */
+
+/* Đảm bảo 2 nút luôn nằm ở chính giữa chiều dọc của ảnh */
+.carousel-btn,
+#sb-carousel-prev,
+#sb-carousel-next {
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 20 !important;
+}
+
+/* Ép nút "Lùi" (<) sát lề trái */
+.carousel-btn.prev,
+#sb-carousel-prev {
+  left: 10px !important;
+  right: auto !important;
+}
+
+/* Ép nút "Tới" (>) sát lề phải */
+.carousel-btn.next,
+#sb-carousel-next {
+  right: 10px !important;
+  left: auto !important;
+}
+
+/* ========================================= */
+/* TỐI ƯU GIAO DIỆN "ĐÃ LƯU" (VIP PRO)       */
+/* ========================================= */
+
+/* 1. Ẩn ảnh */
+#bookmarks-list img {
+  display: none !important;
+}
+
+/* 2. Căn chỉnh lại từng mục (List item) */
+#bookmarks-list li {
+  padding: 12px 15px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  transition: background 0.2s ease !important;
+  cursor: pointer;
+}
+#bookmarks-list li:hover {
+  background: #f8fafc !important;
+}
+
+/* 3. Khung chứa Tên và Phân loại */
+#bookmarks-list div,
+#bookmarks-list .bm-info {
+  margin-left: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important; /* Xếp chữ dọc */
+  justify-content: center !important;
+  gap: 6px !important; /* Kéo Tên và Phân loại lại gần nhau */
+}
+
+/* 4. Tên địa điểm (In đậm, to rõ) */
+#bookmarks-list h4,
+#bookmarks-list strong,
+#bookmarks-list .bm-name {
+  font-size: 15px !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+/* 5. Biến chữ "Du lịch", "Quán ăn" thành Thẻ (Badge) xịn sò */
+#bookmarks-list p,
+#bookmarks-list span,
+#bookmarks-list .bm-category {
+  display: inline-flex !important;
+  align-items: center !important;
+  align-self: flex-start !important; /* Ép thẻ thu nhỏ vừa bằng chữ */
+  background: #e0e7ff !important; /* Nền xanh nhạt */
+  color: #4338ca !important; /* Chữ xanh đậm */
+  padding: 4px 10px !important;
+  border-radius: 20px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 6. Nếu có nút Xóa (Thùng rác), làm cho nó đẹp luôn */
+#bookmarks-list button,
+#bookmarks-list .remove-bm,
+#bookmarks-list .delete-btn {
+  margin-left: 10px !important;
+  background: #fee2e2 !important;
+  color: #ef4444 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  transition: 0.2s !important;
+}
+#bookmarks-list button:hover {
+  background: #f87171 !important;
+  color: white !important;
+}

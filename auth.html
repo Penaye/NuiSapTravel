@@ -1,151 +1,592 @@
 <!doctype html>
 <html lang="vi">
   <head>
-    <meta charset="utf-8" />
-    <!-- Khóa khung hình, tự động phóng to chữ cho điện thoại -->
+    <meta charset="UTF-8" />
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Xác thực - Bản đồ Núi Sập</title>
-    <link rel="stylesheet" href="toast.css" />
-    <script src="toast.js" defer></script>
-    <link rel="stylesheet" href="dashboard.css" />
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- THÊM FILE CONFIG TẠI ĐÂY -->
-    <script src="config.js" defer></script>
-    <script src="auth.js" defer></script>
+    <title>Đăng nhập - Bản đồ Du lịch Núi Sập</title>
+
+    <!-- FontAwesome -->
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <!-- Toast UI -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/mickidum/toast_ui/toast.min.css"
+    />
+
     <style>
+      /* ========================================= */
+      /* CSS TỪ MẪU UIVERSE CỦA BẠN (Đã tinh chỉnh)*/
+      /* ========================================= */
       body {
+        margin: 0;
+        padding: 0;
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
-        background-color: #f4f7fe;
-        margin: 0;
+        min-height: 100vh;
+        background-color: #f8fafc;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+          Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
       }
-      .auth-box {
-        background: white;
-        padding: 30px 40px;
-        border-radius: 12px;
+
+      .form-container {
         width: 100%;
-        max-width: 400px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        max-width: 450px;
+        padding: 20px;
+        box-sizing: border-box;
       }
-      .tabs {
+
+      .form {
         display: flex;
-        margin-bottom: 25px;
-        border-bottom: 2px solid #e2e8f0;
+        flex-direction: column;
+        gap: 15px;
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        box-sizing: border-box;
       }
-      .tab {
-        flex: 1;
-        padding: 12px;
+
+      /* Thêm Logo/Tiêu đề cho Form */
+      .form-header {
         text-align: center;
-        cursor: pointer;
-        font-weight: 600;
-        color: #a3aed1;
-        transition: 0.2s;
+        margin-bottom: 10px;
       }
-      .tab.active {
-        color: #0052cc;
-        border-bottom: 2px solid #0052cc;
+      .form-header h2 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 24px;
       }
-      .form-section {
-        display: none;
-      }
-      .form-section.active {
-        display: block;
-        animation: fadeIn 0.3s;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(5px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .msg {
+      .form-header p {
+        margin: 5px 0 0 0;
+        color: #64748b;
         font-size: 14px;
-        margin-top: 15px;
+      }
+
+      ::placeholder {
+        font-family: inherit;
+        color: #94a3b8;
+      }
+
+      .flex-column > label {
+        color: #151717;
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 5px;
+        display: block;
+      }
+
+      .inputForm {
+        border: 1.5px solid #ecedec;
+        border-radius: 10px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        padding-left: 15px;
+        transition: 0.2s ease-in-out;
+        background: #fff;
+      }
+      .inputForm svg {
+        fill: #64748b;
+        transition: 0.2s ease;
+      }
+
+      .input {
+        margin-left: 10px;
+        border-radius: 10px;
+        border: none;
+        width: 100%;
+        height: 100%;
+        background: transparent;
+        font-size: 15px;
+        color: #333;
+      }
+
+      .input:focus {
+        outline: none;
+      }
+
+      .inputForm:focus-within {
+        border: 1.5px solid #2d79f3;
+      }
+      .inputForm:focus-within svg {
+        fill: #2d79f3;
+      }
+
+      .flex-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 5px;
+      }
+
+      .flex-row > div {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .flex-row > div > label {
+        font-size: 14px;
+        color: #475569;
+        font-weight: 400;
+        cursor: pointer;
+      }
+
+      .span {
+        font-size: 14px;
+        color: #2d79f3;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+      }
+
+      .button-submit {
+        margin: 15px 0 10px 0;
+        background-color: #151717;
+        border: none;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 10px;
+        height: 50px;
+        width: 100%;
+        cursor: pointer;
+        transition: 0.2s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .button-submit:hover {
+        background-color: #2d79f3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(45, 121, 243, 0.3);
+      }
+      .button-submit:disabled {
+        background-color: #94a3b8;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      .p {
         text-align: center;
+        color: #475569;
+        font-size: 14px;
+        margin: 5px 0;
       }
-      .msg.error {
-        color: #ef4444;
+
+      .line {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        color: #94a3b8;
+        margin: 15px 0;
       }
-      .msg.success {
-        color: #166534;
+      .line::before,
+      .line::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .line::before {
+        margin-right: 10px;
+      }
+      .line::after {
+        margin-left: 10px;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 15px;
+      }
+
+      .btn {
+        width: 100%;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 600;
+        font-size: 14px;
+        color: #333;
+        gap: 10px;
+        border: 1px solid #e2e8f0;
+        background-color: white;
+        cursor: pointer;
+        transition: 0.2s ease-in-out;
+      }
+
+      .btn:hover {
+        border-color: #2d79f3;
+        background-color: #f8fafc;
+      }
+
+      /* Hiệu ứng loading */
+      .btn-loader {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #ffffff;
+        border-bottom-color: transparent;
+        border-radius: 50%;
+        animation: rotation 0.8s linear infinite;
+      }
+      @keyframes rotation {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Quay lại trang chủ */
+      .back-to-home {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        color: #64748b;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .back-to-home:hover {
+        color: #0f172a;
+      }
+
+      /* Mobile Responsive */
+      @media (max-width: 480px) {
+        .form {
+          padding: 25px 20px;
+        }
+        .btn-group {
+          flex-direction: column;
+          gap: 10px;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="auth-box">
-      <div class="tabs">
-        <div class="tab active" id="tab-login">Đăng nhập</div>
-        <div class="tab" id="tab-register">Đăng ký</div>
-      </div>
+    <div class="form-container">
+      <div class="form">
+        <div class="form-header">
+          <h2>Chào mừng trở lại! 👋</h2>
+          <p>Đăng nhập để quản lý Bản đồ Núi Sập</p>
+        </div>
 
-      <div id="form-login" class="form-section active">
-        <input
-          type="email"
-          id="login-email"
-          class="form-input"
-          placeholder="Email của bạn"
-        />
-        <input
-          type="password"
-          id="login-password"
-          class="form-input"
-          placeholder="Mật khẩu"
-        />
-        <button
-          id="btn-login"
-          class="btn btn-primary"
-          style="width: 100%; justify-content: center"
-        >
-          Đăng nhập
+        <div class="flex-column">
+          <label>Email</label>
+        </div>
+        <div class="inputForm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            viewBox="0 0 32 32"
+            height="20"
+          >
+            <g data-name="Layer 3" id="Layer_3">
+              <path
+                d="m30.853 13.87a15 15 0 0 0 -29.729 4.082 15.1 15.1 0 0 0 12.876 12.918 15.6 15.6 0 0 0 2.016.13 14.85 14.85 0 0 0 7.715-2.145 1 1 0 1 0 -1.031-1.711 13.007 13.007 0 1 1 5.458-6.529 2.149 2.149 0 0 1 -4.158-.759v-10.856a1 1 0 0 0 -2 0v1.726a8 8 0 1 0 .2 10.325 4.135 4.135 0 0 0 7.83.274 15.2 15.2 0 0 0 .823-7.455zm-14.853 8.13a6 6 0 1 1 6-6 6.006 6.006 0 0 1 -6 6z"
+              ></path>
+            </g>
+          </svg>
+          <input
+            id="email-input"
+            placeholder="Nhập Email của bạn"
+            class="input"
+            type="text"
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="flex-column">
+          <label>Mật khẩu</label>
+        </div>
+        <div class="inputForm">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            viewBox="-64 0 512 512"
+            height="20"
+          >
+            <path
+              d="m336 512h-288c-26.453125 0-48-21.523438-48-48v-224c0-26.476562 21.546875-48 48-48h288c26.453125 0 48 21.523438 48 48v224c0 26.476562-21.546875 48-48 48zm-288-288c-8.8125 0-16 7.167969-16 16v224c0 8.832031 7.1875 16 16 16h288c8.8125 0 16-7.167969 16-16v-224c0-8.832031-7.1875-16-16-16zm0 0"
+            ></path>
+            <path
+              d="m304 224c-8.832031 0-16-7.167969-16-16v-80c0-52.929688-43.070312-96-96-96s-96 43.070312-96 96v80c0 8.832031-7.167969 16-16 16s-16-7.167969-16-16v-80c0-70.59375 57.40625-128 128-128s128 57.40625 128 128v80c0 8.832031-7.167969 16-16 16zm0 0"
+            ></path>
+          </svg>
+          <input
+            id="password-input"
+            placeholder="Nhập Mật khẩu"
+            class="input"
+            type="password"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="flex-row">
+          <div>
+            <input type="checkbox" id="remember-me" />
+            <label for="remember-me">Ghi nhớ</label>
+          </div>
+          <span class="span">Quên mật khẩu?</span>
+        </div>
+
+        <!-- Nút Đăng nhập -->
+        <button id="login-btn" class="button-submit">
+          <span class="btn-text">Đăng nhập ngay</span>
+          <span class="btn-loader"></span>
         </button>
+
+        <p class="p">Chưa có tài khoản? <span class="span">Đăng ký</span></p>
+
+        <p class="p line">Hoặc tiếp tục với</p>
+
+        <div class="btn-group">
+          <!-- Nút Google -->
+          <button class="btn google">
+            <svg
+              xml:space="preserve"
+              style="enable-background: new 0 0 512 512"
+              viewBox="0 0 512 512"
+              y="0px"
+              x="0px"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xmlns="http://www.w3.org/2000/svg"
+              id="Layer_1"
+              width="20"
+              version="1.1"
+            >
+              <path
+                d="M113.47,309.408L95.648,375.94l-65.139,1.378C11.042,341.211,0,299.9,0,256c0-42.451,10.324-82.483,28.624-117.732h0.014l57.992,10.632l25.404,57.644c-5.317,15.501-8.215,32.141-8.215,49.456C103.821,274.792,107.225,292.797,113.47,309.408z"
+                style="fill: #fbbb00"
+              ></path>
+              <path
+                d="M507.527,208.176C510.467,223.662,512,239.655,512,256c0,18.328-1.927,36.206-5.598,53.451c-12.462,58.683-45.025,109.925-90.134,146.187l-0.014-0.014l-73.044-3.727l-10.338-64.535c29.932-17.554,53.324-45.025,65.646-77.911h-136.89V208.176h138.887L507.527,208.176L507.527,208.176z"
+                style="fill: #518ef8"
+              ></path>
+              <path
+                d="M416.253,455.624l0.014,0.014C372.396,490.901,316.666,512,256,512c-97.491,0-182.252-54.491-225.491-134.681l82.961-67.91c21.619,57.698,77.278,98.771,142.53,98.771c28.047,0,54.323-7.582,76.87-20.818L416.253,455.624z"
+                style="fill: #28b446"
+              ></path>
+              <path
+                d="M419.404,58.936l-82.933,67.896c-23.335-14.586-50.919-23.012-80.471-23.012c-66.729,0-123.429,42.957-143.965,102.724l-83.397-68.276h-0.014C71.23,56.123,157.06,0,256,0C318.115,0,375.068,22.126,419.404,58.936z"
+                style="fill: #f14336"
+              ></path>
+            </svg>
+            Google
+          </button>
+          <!-- Nút Apple -->
+          <button class="btn apple">
+            <svg
+              xml:space="preserve"
+              style="enable-background: new 0 0 22.773 22.773"
+              viewBox="0 0 22.773 22.773"
+              y="0px"
+              x="0px"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xmlns="http://www.w3.org/2000/svg"
+              id="Capa_1"
+              width="20"
+              height="20"
+              version="1.1"
+            >
+              <g>
+                <g>
+                  <path
+                    d="M15.769,0c0.053,0,0.106,0,0.162,0c0.13,1.606-0.483,2.806-1.228,3.675c-0.731,0.863-1.732,1.7-3.351,1.573c-0.108-1.583,0.506-2.694,1.25-3.561C13.292,0.879,14.557,0.16,15.769,0z"
+                  ></path>
+                  <path
+                    d="M20.67,16.716c0,0.016,0,0.03,0,0.045c-0.455,1.378-1.104,2.559-1.896,3.655c-0.723,0.995-1.609,2.334-3.191,2.334c-1.367,0-2.275-0.879-3.676-0.903c-1.482-0.024-2.297,0.735-3.652,0.926c-0.155,0-0.31,0-0.462,0c-0.995-0.144-1.798-0.932-2.383-1.642c-1.725-2.098-3.058-4.808-3.306-8.276c0-0.34,0-0.679,0-1.019c0.105-2.482,1.311-4.5,2.914-5.478c0.846-0.52,2.009-0.963,3.304-0.765c0.555,0.086,1.122,0.276,1.619,0.464c0.471,0.181,1.06,0.502,1.618,0.485c0.378-0.011,0.754-0.208,1.135-0.347c1.116-0.403,2.21-0.865,3.652-0.648c1.733,0.262,2.963,1.032,3.723,2.22c-1.466,0.933-2.625,2.339-2.427,4.74C17.818,14.688,19.086,15.964,20.67,16.716z"
+                  ></path>
+                </g>
+              </g>
+            </svg>
+            Apple
+          </button>
+        </div>
       </div>
 
-      <div id="form-register" class="form-section">
-        <input
-          type="text"
-          id="reg-name"
-          class="form-input"
-          placeholder="Họ và tên"
-        />
-        <input
-          type="email"
-          id="reg-email"
-          class="form-input"
-          placeholder="Email của bạn"
-        />
-        <input
-          type="password"
-          id="reg-password"
-          class="form-input"
-          placeholder="Mật khẩu (ít nhất 6 ký tự)"
-        />
-        <button
-          id="btn-register"
-          class="btn btn-primary"
-          style="width: 100%; justify-content: center"
-        >
-          Tạo tài khoản
-        </button>
-      </div>
-
-      <div id="auth-msg" class="msg"></div>
-
-      <div style="margin-top: 20px; text-align: center">
-        <a
-          href="index.html"
-          style="font-size: 14px; color: #666; text-decoration: none"
-          >← Quay lại bản đồ</a
-        >
-      </div>
+      <!-- Nút quay lại trang Bản đồ -->
+      <a href="index.html" class="back-to-home">
+        <i class="fa-solid fa-arrow-left"></i> Quay lại Bản đồ
+      </a>
     </div>
+
+    <!-- Thư viện Supabase và Toast -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/gh/mickidum/toast_ui/toast.min.js"></script>
+    <script src="config.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", async () => {
+        // ==========================================
+        // 1. TỰ VIẾT HỆ THỐNG THÔNG BÁO (TOAST)
+        // Chống 100% lỗi "toast is not defined" do sập CDN
+        // ==========================================
+        const showToast = (title, message, type) => {
+          const toast = document.createElement("div");
+          toast.style.cssText = `
+          position: fixed; top: 20px; right: 20px; z-index: 9999;
+          background: white; 
+          border-left: 5px solid ${type === "error" ? "#ef4444" : "#10b981"};
+          padding: 15px 20px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+          font-family: sans-serif; min-width: 250px;
+          transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        `;
+          toast.innerHTML = `
+          <h4 style="margin: 0 0 5px 0; color: ${type === "error" ? "#ef4444" : "#10b981"}; font-size: 16px;">${title}</h4>
+          <p style="margin: 0; color: #333; font-size: 14px;">${message}</p>
+        `;
+          document.body.appendChild(toast);
+
+          // Hiệu ứng trượt vào
+          setTimeout(() => (toast.style.transform = "translateX(0)"), 10);
+          // Tự động trượt ra và xóa sau 3 giây
+          setTimeout(() => {
+            toast.style.transform = "translateX(120%)";
+            setTimeout(() => toast.remove(), 300);
+          }, 3000);
+        };
+
+        // ==========================================
+        // 2. KHỞI TẠO SUPABASE CHUẨN XÁC
+        // ==========================================
+        // Trỏ đúng vào biến cấu hình trong config.js của bạn
+        const db = window.supabaseClient;
+
+        if (!db) {
+          showToast(
+            "Lỗi hệ thống",
+            "Không tìm thấy cấu hình Supabase (kiểm tra lại config.js).",
+            "error",
+          );
+          return;
+        }
+
+        // KHI VỪA VÀO, NẾU ĐÃ LOGIN THÌ CHUYỂN THẲNG RA BẢN ĐỒ
+        const {
+          data: { session },
+        } = await db.auth.getSession();
+        if (session) {
+          window.location.href = "index.html";
+          return;
+        }
+
+        // ==========================================
+        // 3. LIÊN KẾT GIAO DIỆN VÀ XỬ LÝ LOGIC
+        // ==========================================
+        const emailInput = document.getElementById("email-input");
+        const passwordInput = document.getElementById("password-input");
+        const submitBtn = document.getElementById("login-btn");
+
+        const btnText = submitBtn.querySelector(".btn-text");
+        const btnLoader = submitBtn.querySelector(".btn-loader");
+        const formTitle = document.querySelector(".form-header h2");
+        const formSubtitle = document.querySelector(".form-header p");
+
+        // Chuyển đổi Đăng nhập / Đăng ký
+        const toggleWrapper = document.querySelector(".p");
+        const toggleBtn = toggleWrapper.querySelector(".span");
+
+        let isLoginMode = true; // Mặc định mở lên là Đăng nhập
+
+        toggleBtn.addEventListener("click", () => {
+          isLoginMode = !isLoginMode; // Đảo ngược trạng thái
+          if (isLoginMode) {
+            formTitle.textContent = "Chào mừng trở lại! 👋";
+            formSubtitle.textContent = "Đăng nhập để quản lý Bản đồ Núi Sập";
+            btnText.textContent = "Đăng nhập ngay";
+            toggleWrapper.firstChild.textContent = "Chưa có tài khoản? ";
+            toggleBtn.textContent = "Đăng ký";
+          } else {
+            formTitle.textContent = "Tạo tài khoản mới 🚀";
+            formSubtitle.textContent = "Đăng ký để tham gia hệ thống";
+            btnText.textContent = "Đăng ký ngay";
+            toggleWrapper.firstChild.textContent = "Đã có tài khoản? ";
+            toggleBtn.textContent = "Đăng nhập";
+          }
+        });
+
+        // Xử lý khi bấm nút Đăng nhập / Đăng ký
+        submitBtn.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const email = emailInput.value.trim();
+          const password = passwordInput.value;
+
+          if (!email || !password) {
+            showToast("Lỗi", "Vui lòng nhập đủ Email và Mật khẩu!", "error");
+            return;
+          }
+
+          // Bật loading
+          submitBtn.disabled = true;
+          btnText.style.display = "none";
+          btnLoader.style.display = "block";
+
+          try {
+            if (isLoginMode) {
+              // ĐĂNG NHẬP
+              const { error } = await db.auth.signInWithPassword({
+                email,
+                password,
+              });
+              if (error) throw error;
+
+              showToast("Thành công", "Đăng nhập thành công!", "success");
+              setTimeout(() => (window.location.href = "index.html"), 1500);
+            } else {
+              // ĐĂNG KÝ
+              const fullName = email.split("@")[0]; // Lấy chữ trước @ làm Tên
+              const { error } = await db.auth.signUp({
+                email,
+                password,
+                options: { data: { full_name: fullName } },
+              });
+              if (error) throw error;
+
+              showToast(
+                "Thành công",
+                "Đăng ký thành công! Đang chuyển hướng...",
+                "success",
+              );
+              setTimeout(() => (window.location.href = "index.html"), 1500);
+            }
+          } catch (error) {
+            // Dịch lỗi tiếng Anh sang tiếng Việt
+            let errorMsg = error.message;
+            if (errorMsg === "Invalid login credentials")
+              errorMsg = "Tài khoản hoặc mật khẩu không đúng!";
+            if (errorMsg.includes("already registered"))
+              errorMsg = "Email này đã được đăng ký!";
+            if (errorMsg.includes("Password should be at least"))
+              errorMsg = "Mật khẩu phải có ít nhất 6 ký tự!";
+
+            showToast("Thất bại", errorMsg, "error");
+          } finally {
+            // Tắt loading
+            submitBtn.disabled = false;
+            btnText.style.display = "block";
+            btnLoader.style.display = "none";
+          }
+        });
+
+        // Cho phép bấm Enter để submit
+        passwordInput.addEventListener("keypress", (e) => {
+          if (e.key === "Enter") submitBtn.click();
+        });
+      });
+    </script>
   </body>
 </html>
