@@ -766,3 +766,147 @@ body {
   border-color: #34d399;
   box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
 }
+/* ========================================= */
+/* TỐI ƯU GIAO DIỆN DI ĐỘNG (VIP PRO APP)    */
+/* ========================================= */
+@media (max-width: 768px) {
+  /* --- 1. TRANG BẢN ĐỒ (MAP VIEW) --- */
+
+  /* Biến thanh tài khoản thành Bottom Navigation (Giống Shopee/Grab) */
+  #auth-section.admin-access-btn {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(15px);
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.08) !important;
+    padding: 12px 5px !important;
+    padding-bottom: env(
+      safe-area-inset-bottom,
+      15px
+    ) !important; /* Chống lẹm tai thỏ iPhone */
+    display: flex !important;
+    justify-content: space-around !important;
+    align-items: center;
+    z-index: 2000;
+  }
+
+  /* Xóa các vạch kẻ dọc phân cách */
+  #auth-section .separator {
+    display: none !important;
+  }
+
+  /* Đổi các nút thành dạng Cột (Icon ở trên to, chữ ở dưới nhỏ) */
+  #auth-section a,
+  #auth-section span {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center;
+    gap: 4px;
+    font-size: 10px !important;
+    color: #64748b !important; /* Xám nhạt hiện đại */
+    flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Phóng to Icon */
+  #auth-section i {
+    font-size: 18px !important;
+    margin-bottom: 2px;
+  }
+
+  /* Nhấn mạnh màu sắc cho các nút quan trọng */
+  #btn-leaderboard-in,
+  #btn-leaderboard-out {
+    color: #f59e0b !important;
+  }
+  #btn-leaderboard-in i,
+  #btn-leaderboard-out i {
+    color: #f59e0b !important;
+  }
+
+  a[href="dashboard.html"] {
+    color: #10b981 !important;
+  }
+  a[href="dashboard.html"] i {
+    color: #10b981 !important;
+  }
+
+  a[href="profile.html"] {
+    color: #3b82f6 !important;
+  }
+  a[href="profile.html"] i {
+    color: #3b82f6 !important;
+  }
+
+  /* Đẩy logo Mapbox lên cao để không bị Bottom Bar đè */
+  .mapboxgl-ctrl-bottom-left {
+    bottom: 70px !important;
+    z-index: 10;
+  }
+
+  /* --- 2. TRANG QUẢN TRỊ (DASHBOARD) --- */
+
+  /* Ép layout ngang thành dọc */
+  .admin-container {
+    flex-direction: column !important;
+  }
+
+  /* Chuyển Sidebar thành Menu trượt ngang vuốt bằng tay ở trên cùng */
+  .admin-sidebar {
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+    padding: 10px !important;
+    overflow-x: auto !important; /* Cho phép vuốt ngang */
+    white-space: nowrap; /* Không cho rớt dòng */
+    border-right: none !important;
+    border-bottom: 1px solid #e2e8f0;
+    background: white;
+  }
+
+  /* Giấu logo to để tiết kiệm không gian */
+  .admin-sidebar .admin-logo {
+    display: none !important;
+  }
+
+  /* Vuốt lại các nút menu cho thành hình viên thuốc */
+  .admin-menu {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px;
+    margin: 0 !important;
+  }
+
+  .admin-menu li {
+    margin-bottom: 0 !important;
+    padding: 8px 15px !important;
+    background: #f1f5f9;
+    border-radius: 20px;
+  }
+
+  /* Nới rộng khu vực chính */
+  .admin-main {
+    width: 100% !important;
+    padding: 15px !important;
+  }
+
+  /* Ép tất cả các thẻ thống kê, biểu đồ xếp chồng lên nhau thành 1 cột */
+  .stats-grid,
+  .charts-grid,
+  .dashboard-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+  }
+
+  .stat-card,
+  .chart-card {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+}

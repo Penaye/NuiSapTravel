@@ -1054,15 +1054,15 @@ async function checkGlobalAuth() {
         <div class="separator"></div>
         <span id="btn-show-bookmarks" class="action-txt"><i class="fa-solid fa-heart"></i> Đã lưu</span>
         <div class="separator"></div>
-        <a href="dashboard.html" style="color: #333; font-weight: 600; text-decoration: none;" class="action-txt">
-          <i class="fa-solid fa-gear"></i> Quản trị
+        <a href="dashboard.html" style="color: #10b981; font-weight: 600; text-decoration: none;" class="action-txt">
+          <i class="fa-solid fa-chart-pie"></i> Quản trị
         </a>
         <div class="separator"></div>
         <a href="profile.html" style="color: #0052cc; font-weight: 600; text-decoration: none;" class="action-txt">
           <i class="fa-solid fa-user"></i> Hồ sơ
         </a>
         <div class="separator"></div>
-        <span id="main-logout-btn" class="logout-txt action-txt">Thoát</span>
+        <span id="main-logout-btn" class="logout-txt action-txt"><i class="fa-solid fa-right-from-bracket"></i> Thoát</span>
       `;
 
       document
