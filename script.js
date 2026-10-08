@@ -84,6 +84,7 @@ try {
     style: `mapbox://styles/mapbox/${currentMapStyle}`,
     projection: "globe",
     zoom: 13,
+    maxZoom: 18.5, // FIX: Ngăn chặn vỡ hạt ảnh vệ tinh khi zoom quá gần
     center: [105.267768, 10.262644],
     maxBounds: [
       [Math.min(...lngs) - 0.2, Math.min(...lats) - 0.2],
@@ -735,39 +736,110 @@ if (map) {
 
   let hoveredUnclusteredId = null;
 
-  map.on("click", "unclustered-point", (e) => {
-    if (!e.features.length) return;
-    openLocationSidebar(e.features[0]);
-    map.flyTo({ center: e.features[0].geometry.coordinates, zoom: 15.5 });
-  });
+  // NHẬN DIỆN THIẾT BỊ: Kiểm tra xem người dùng đang dùng Mobile hay PC
+  const isMobileDevice =
+    window.innerWidth <= 768 ||
+    "ontouchstart" in window ||
+    navigator.maxTouchPoints > 0;
 
-  map.on("mousemove", "unclustered-point", (e) => {
-    map.getCanvas().style.cursor = "pointer";
-    if (e.features.length > 0) {
+  if (isMobileDevice) {
+    // ==========================================
+    // CÁCH 1: XỬ LÝ TRÊN ĐIỆN THOẠI (MOBILE)
+    // ==========================================
+
+    // Tạo vùng đệm 25px để ngón tay dễ chạm trúng
+    map.on("click", (e) => {
+      const bbox = [
+        [e.point.x - 25, e.point.y - 25],
+        [e.point.x + 25, e.point.y + 25],
+      ];
+
+      const features = map.queryRenderedFeatures(bbox, {
+        layers: ["unclustered-point", "unclustered-icon"],
+      });
+
+      if (features.length > 0) {
+        const feature = features[0];
+
+        openLocationSidebar(feature);
+
+        // Camera: Đẩy marker nhích lên trên để không bị Bottom Sheet che mất
+        map.flyTo({
+          center: feature.geometry.coordinates,
+          zoom: 15.5,
+          padding: { bottom: 350 }, // Đẩy lên 350px
+          speed: 1.2,
+        });
+      }
+    });
+  } else {
+    // ==========================================
+    // CÁCH 2: XỬ LÝ TRÊN MÁY TÍNH (PC)
+    // ==========================================
+
+    // Bấm chính xác vào chấm tròn (Point) bằng chuột
+    map.on("click", "unclustered-point", (e) => {
+      if (!e.features.length) return;
+      openLocationSidebar(e.features[0]);
+
+      // Camera: Đẩy marker nhích sang trái để không bị Sidebar phải che mất
+      map.flyTo({
+        center: e.features[0].geometry.coordinates,
+        zoom: 15.5,
+        padding: { right: 400 }, // Đẩy sang trái 400px
+        speed: 1.2,
+      });
+    });
+
+    // Cho phép bấm vào cả Tên địa điểm (Label Text)
+    map.on("click", "unclustered-icon", (e) => {
+      if (!e.features.length) return;
+      openLocationSidebar(e.features[0]);
+      map.flyTo({
+        center: e.features[0].geometry.coordinates,
+        zoom: 15.5,
+        padding: { right: 400 },
+        speed: 1.2,
+      });
+    });
+
+    // Hiệu ứng Hover chuột (Chỉ cần thiết trên PC)
+    map.on("mousemove", "unclustered-point", (e) => {
+      map.getCanvas().style.cursor = "pointer";
+      if (e.features.length > 0) {
+        if (hoveredUnclusteredId !== null) {
+          map.setFeatureState(
+            { source: "Nuisaptravel-src", id: hoveredUnclusteredId },
+            { hover: false },
+          );
+        }
+        hoveredUnclusteredId = e.features[0].id;
+        map.setFeatureState(
+          { source: "Nuisaptravel-src", id: hoveredUnclusteredId },
+          { hover: true },
+        );
+      }
+    });
+
+    map.on("mouseleave", "unclustered-point", () => {
+      map.getCanvas().style.cursor = "";
       if (hoveredUnclusteredId !== null) {
         map.setFeatureState(
           { source: "Nuisaptravel-src", id: hoveredUnclusteredId },
           { hover: false },
         );
       }
-      hoveredUnclusteredId = e.features[0].id;
-      map.setFeatureState(
-        { source: "Nuisaptravel-src", id: hoveredUnclusteredId },
-        { hover: true },
-      );
-    }
-  });
+      hoveredUnclusteredId = null;
+    });
 
-  map.on("mouseleave", "unclustered-point", () => {
-    map.getCanvas().style.cursor = "";
-    if (hoveredUnclusteredId !== null) {
-      map.setFeatureState(
-        { source: "Nuisaptravel-src", id: hoveredUnclusteredId },
-        { hover: false },
-      );
-    }
-    hoveredUnclusteredId = null;
-  });
+    // Đổi con trỏ thành bàn tay khi rê vào Tên địa điểm
+    map.on("mousemove", "unclustered-icon", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "unclustered-icon", () => {
+      map.getCanvas().style.cursor = "";
+    });
+  }
 }
 
 // BỘ LỌC GẦN TÔI & DANH MỤC
@@ -980,31 +1052,55 @@ if (SpeechRecognition && voiceBtn) {
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
 
+  let isListening = false;
+
+  // Hàm gom chung logic đưa UI về trạng thái mặc định
+  function resetVoiceUI() {
+    isListening = false;
+    voiceBtn.classList.remove("listening");
+    searchInput.placeholder = "Tìm địa điểm";
+  }
+
   voiceBtn.addEventListener("click", () => {
-    recognition.start();
+    if (isListening) {
+      // Dùng abort() để ép dừng mic ngay lập tức, không chờ phân tích kết quả
+      recognition.abort();
+      resetVoiceUI();
+    } else {
+      try {
+        recognition.start();
+      } catch (err) {
+        // Tránh lỗi khi API chưa kịp dọn dẹp phiên trước
+        console.warn("Lỗi khởi động Micro:", err);
+      }
+    }
   });
 
   recognition.onstart = function () {
+    isListening = true;
     voiceBtn.classList.add("listening");
-    searchInput.placeholder = "Đang nghe...";
+    searchInput.placeholder = "Đang nghe... (Bấm để dừng)";
     searchInput.value = "";
   };
 
-  recognition.onspeechend = function () {
-    recognition.stop();
-    voiceBtn.classList.remove("listening");
-    searchInput.placeholder = "Tìm kiếm địa điểm...";
+  // Dùng onend thay cho onspeechend: Bắt mọi trường hợp mic bị ngắt
+  recognition.onend = function () {
+    resetVoiceUI();
   };
 
   recognition.onresult = function (event) {
     const transcript = event.results[0][0].transcript;
     searchInput.value = transcript;
     handleSearchInput(transcript);
+    resetVoiceUI();
   };
 
   recognition.onerror = function (event) {
-    voiceBtn.classList.remove("listening");
-    searchInput.placeholder = "Tìm kiếm địa điểm...";
+    resetVoiceUI();
+
+    // Bỏ qua lỗi aborted vì đây là hành động chủ động bấm dừng
+    if (event.error === "aborted") return;
+
     if (window.Toast) {
       if (event.error === "not-allowed") {
         window.Toast.show(
@@ -1019,7 +1115,6 @@ if (SpeechRecognition && voiceBtn) {
 } else if (voiceBtn) {
   voiceBtn.style.display = "none";
 }
-
 // ==========================================
 // 7. XÁC THỰC VÀ ĐÁNH GIÁ (GLOBAL AUTH)
 // ==========================================
@@ -1030,6 +1125,7 @@ async function checkGlobalAuth() {
       data: { session },
     } = await supabaseClient.auth.getSession();
     const authSection = document.getElementById("auth-section");
+
     if (session && authSection) {
       currentAuthUser = session.user;
       const nameInput = document.getElementById("reviewer-name");
@@ -1047,30 +1143,37 @@ async function checkGlobalAuth() {
         .eq("user_id", currentAuthUser.id);
       if (data) userBookmarkedIds = data.map((d) => d.location_id);
 
+      // KIỂM TRA QUYỀN CỦA USER ĐỂ ẨN/HIỆN NÚT QUẢN TRỊ
+      const { data: profileData } = await supabaseClient
+        .from("profiles")
+        .select("role")
+        .eq("id", currentAuthUser.id)
+        .single();
+      const userRole = profileData?.role || "user";
+
+      // Chỉ tạo HTML nút Quản trị nếu là Admin hoặc Manager
+      let adminButtonHtml = "";
+      if (userRole === "admin" || userRole === "manager") {
+        adminButtonHtml = `
+          <div class="separator"></div>
+          <a href="dashboard.html" style="color: #10b981; font-weight: 600; text-decoration: none;" class="action-txt">
+            <i class="fa-solid fa-chart-pie"></i> Quản trị
+          </a>
+        `;
+      }
+
       authSection.innerHTML = `
         <a href="#" id="btn-leaderboard-in" class="action-txt" style="color: #f59e0b; font-weight: 700; text-decoration: none;">
           <i class="fa-solid fa-trophy"></i> Xếp hạng
         </a>
         <div class="separator"></div>
         <span id="btn-show-bookmarks" class="action-txt"><i class="fa-solid fa-heart"></i> Đã lưu</span>
-        <div class="separator"></div>
-        <a href="dashboard.html" style="color: #10b981; font-weight: 600; text-decoration: none;" class="action-txt">
-          <i class="fa-solid fa-chart-pie"></i> Quản trị
-        </a>
+        ${adminButtonHtml}
         <div class="separator"></div>
         <a href="profile.html" style="color: #0052cc; font-weight: 600; text-decoration: none;" class="action-txt">
           <i class="fa-solid fa-user"></i> Hồ sơ
         </a>
-        <div class="separator"></div>
-        <span id="main-logout-btn" class="logout-txt action-txt"><i class="fa-solid fa-right-from-bracket"></i> Thoát</span>
       `;
-
-      document
-        .getElementById("main-logout-btn")
-        .addEventListener("click", async () => {
-          await supabaseClient.auth.signOut();
-          location.reload();
-        });
 
       document
         .getElementById("btn-show-bookmarks")
@@ -1316,6 +1419,7 @@ document.getElementById("auth-section")?.addEventListener("click", (e) => {
     renderLeaderboard();
   }
 });
+
 // ==========================================
 // 9. THUẬT TOÁN LỊCH TRÌNH THÔNG MINH (TSP - V2)
 // ==========================================

@@ -1320,3 +1320,91 @@ body {
   background: #f87171 !important;
   color: white !important;
 }
+
+/* ========================================= */
+/* THANH TÌM KIẾM THEO GIAO DIỆN MỚI         */
+/* ========================================= */
+#search-container.searchbar {
+  position: relative;
+  font-family: arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  z-index: 3;
+  height: 46px; /* Khớp với độ cao của nút 3 gạch bên cạnh */
+  background: white;
+  border: 1px solid #dfe1e5;
+  border-radius: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Giữ lại đổ bóng để nổi trên bản đồ */
+  flex: 1; /* Cho phép tự động giãn rộng */
+  transition: box-shadow 0.2s;
+}
+
+#search-container.searchbar:hover,
+#search-container.searchbar:focus-within {
+  box-shadow:
+    0 1px 6px rgb(32 33 36 / 28%),
+    0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: rgba(223, 225, 229, 0);
+}
+
+.searchbar-wrapper {
+  flex: 1;
+  display: flex;
+  padding: 0 8px 0 14px;
+  align-items: center;
+}
+
+.searchbar-left {
+  display: flex;
+  align-items: center;
+  padding-right: 13px;
+}
+
+.searchbar-icon {
+  display: inline-block;
+  fill: #9aa0a6;
+  height: 20px;
+  width: 20px;
+}
+
+.searchbar-center {
+  display: flex;
+  flex: 1;
+}
+
+.searchbar-input {
+  background-color: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
+  color: rgba(0, 0, 0, 0.87);
+  outline: none;
+  font-size: 15px;
+  width: 100%;
+}
+
+.searchbar-right {
+  display: flex;
+  align-items: center;
+}
+
+/* Hiệu ứng khi đang lắng nghe giọng nói (Animation) */
+#voice-search-btn.listening svg {
+  animation: pulse-mic 1.5s infinite;
+  filter: drop-shadow(0 0 3px rgba(234, 67, 53, 0.6));
+}
+
+@keyframes pulse-mic {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

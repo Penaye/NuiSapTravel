@@ -81,11 +81,21 @@ window.DashboardReviews = {
     const self = this;
     document.querySelectorAll(".delete-review").forEach((btn) =>
       btn.addEventListener("click", async (e) => {
-        const id = e.currentTarget.getAttribute("data-id");
-        if (confirm("Bạn có chắc chắn muốn xóa đánh giá này không?")) {
-          e.currentTarget.innerHTML =
-            '<i class="fa-solid fa-spinner fa-spin"></i>';
-          e.currentTarget.disabled = true;
+        // ĐÃ SỬA: LƯU BIẾN TRƯỚC KHI AWAIT
+        const currentBtn = e.currentTarget;
+        const id = currentBtn.getAttribute("data-id");
+
+        // GỌI MODAL XÁC NHẬN MỚI
+        const isConfirmed = await window.ConfirmModal.show(
+          "Bạn có chắc chắn muốn xóa đánh giá này không?",
+          "Xóa",
+          "Hủy",
+          "danger",
+        );
+
+        if (isConfirmed) {
+          currentBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          currentBtn.disabled = true;
 
           await supabase.from("reviews").delete().eq("id", id);
           self.loadReviewsFromDB();

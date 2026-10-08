@@ -64,7 +64,6 @@ window.DashboardUsers = {
 
     approveTableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:#0052cc; margin-bottom:10px;"></i><br><span style="color:#666; font-size:14px;">Đang tải dữ liệu...</span></td></tr>`;
 
-    // FIX: Chỉ định đích danh foreign key locations_category_id_fkey để tránh lỗi PGRST201
     const { data, error, count } = await supabase
       .from("locations")
       .select("*, categories!locations_category_id_fkey(name)", {
@@ -109,13 +108,22 @@ window.DashboardUsers = {
     });
 
     const self = this;
+
     document.querySelectorAll(".btn-approve").forEach((btn) =>
       btn.addEventListener("click", async (e) => {
-        const id = e.currentTarget.getAttribute("data-id");
-        if (confirm("Chấp thuận đưa địa điểm này lên bản đồ?")) {
-          e.currentTarget.innerHTML =
-            '<i class="fa-solid fa-spinner fa-spin"></i>';
-          e.currentTarget.disabled = true;
+        // ĐÃ SỬA: LƯU BIẾN TRƯỚC KHI AWAIT
+        const currentBtn = e.currentTarget;
+        const id = currentBtn.getAttribute("data-id");
+        const isConfirmed = await window.ConfirmModal.show(
+          "Chấp thuận đưa địa điểm này lên bản đồ?",
+          "Duyệt ngay",
+          "Hủy",
+          "info",
+        );
+
+        if (isConfirmed) {
+          currentBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          currentBtn.disabled = true;
 
           await supabase
             .from("locations")
@@ -130,11 +138,19 @@ window.DashboardUsers = {
 
     document.querySelectorAll(".btn-reject").forEach((btn) =>
       btn.addEventListener("click", async (e) => {
-        const id = e.currentTarget.getAttribute("data-id");
-        if (confirm("Từ chối và xóa địa điểm này?")) {
-          e.currentTarget.innerHTML =
-            '<i class="fa-solid fa-spinner fa-spin"></i>';
-          e.currentTarget.disabled = true;
+        // ĐÃ SỬA: LƯU BIẾN TRƯỚC KHI AWAIT
+        const currentBtn = e.currentTarget;
+        const id = currentBtn.getAttribute("data-id");
+        const isConfirmed = await window.ConfirmModal.show(
+          "Từ chối và xóa địa điểm này?",
+          "Xóa",
+          "Hủy",
+          "danger",
+        );
+
+        if (isConfirmed) {
+          currentBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          currentBtn.disabled = true;
 
           await supabase.from("locations").delete().eq("id", id);
           self.loadPendingLocations();
@@ -215,16 +231,22 @@ window.DashboardUsers = {
     const self = this;
     document.querySelectorAll(".role-select").forEach((select) =>
       select.addEventListener("change", async (e) => {
-        const userId = e.target.getAttribute("data-id");
-        const currentRole = e.target.getAttribute("data-current");
-        const newRole = e.target.value;
+        // ĐÃ SỬA: LƯU BIẾN TRƯỚC KHI AWAIT
+        const currentSelect = e.target;
+        const userId = currentSelect.getAttribute("data-id");
+        const currentRole = currentSelect.getAttribute("data-current");
+        const newRole = currentSelect.value;
 
-        if (
-          confirm(
-            `Bạn có chắc chắn muốn thay đổi quyền người này thành ${newRole.toUpperCase()}?`,
-          )
-        ) {
-          e.target.disabled = true;
+        // GỌI MODAL XÁC NHẬN ĐỔI QUYỀN
+        const isConfirmed = await window.ConfirmModal.show(
+          `Bạn có chắc muốn đổi quyền thành ${newRole.toUpperCase()}?`,
+          "Lưu thay đổi",
+          "Hủy",
+          "danger",
+        );
+
+        if (isConfirmed) {
+          currentSelect.disabled = true;
 
           const { error } = await supabase
             .from("profiles")
@@ -232,14 +254,14 @@ window.DashboardUsers = {
             .eq("id", userId);
           if (error) {
             Toast.show("Lỗi khi đổi quyền: " + error.message);
-            e.target.value = currentRole;
-            e.target.disabled = false;
+            currentSelect.value = currentRole;
+            currentSelect.disabled = false;
           } else {
             Toast.show("Cập nhật quyền thành công!");
             self.loadUsersFromDB();
           }
         } else {
-          e.target.value = currentRole;
+          currentSelect.value = currentRole;
         }
       }),
     );

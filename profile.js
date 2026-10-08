@@ -112,42 +112,66 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!reviews || reviews.length === 0) {
       listEl.innerHTML =
-        '<p style="color: #64748b;">Bạn chưa có bài đánh giá nào.</p>';
+        '<p style="color: var(--text-sub); padding: 20px 0; text-align: center;">Bạn chưa có bài đánh giá nào.</p>';
       return;
     }
 
+    // Lấy chức vụ của user hiện tại (đã được fetch ở đầu file profile.js)
+    const userRole = profile?.role || "user";
+
     listEl.innerHTML = reviews
-      .map(
-        (r) => `
-      <div class="my-review-item">
-        <div class="mr-header">
-          <div>
-            <div class="mr-loc-name"><i class="fa-solid fa-location-dot"></i> ${r.locations?.name || "Địa điểm không xác định"}</div>
-            <div class="mr-date">${new Date(r.created_at).toLocaleDateString("vi-VN")}</div>
+      .map((r) => {
+        // ẨN NÚT XÓA NẾU CHỈ LÀ USER BÌNH THƯỜNG
+        let deleteBtnHtml = "";
+        if (userRole === "admin" || userRole === "manager") {
+          deleteBtnHtml = `
+            <div>
+              <button class="btn-delete btn-del-review" data-id="${r.id}">
+                <i class="fa-solid fa-trash"></i> Xóa đánh giá
+              </button>
+            </div>
+          `;
+        }
+
+        return `
+          <div class="review-item">
+            <div class="review-header">
+              <div>
+                <div class="loc-name">
+                  <i class="fa-solid fa-location-dot" style="color: #0052cc;"></i> 
+                  ${r.locations?.name || "Địa điểm không xác định"}
+                </div>
+                <span class="loc-date">${new Date(r.created_at).toLocaleDateString("vi-VN")}</span>
+              </div>
+              <div class="review-stars">${"⭐".repeat(r.rating)}</div>
+            </div>
+            <p class="review-text">${r.comment}</p>
+            ${r.image_url ? `<img src="${r.image_url}" class="review-img" />` : ""}
+            
+            ${deleteBtnHtml}
           </div>
-          <div class="mr-rating">${"⭐".repeat(r.rating)}</div>
-        </div>
-        <p style="margin:0; font-size: 14px; color: #333;">${r.comment}</p>
-        ${r.image_url ? `<img src="${r.image_url}" class="mr-img" />` : ""}
-        
-        <div class="mr-actions">
-          <button class="btn btn-outline btn-del-review" data-id="${r.id}" style="padding: 5px 10px; font-size: 12px; color: #ef4444; border-color: #ef4444;">
-            <i class="fa-solid fa-trash"></i> Xóa
-          </button>
-        </div>
-      </div>
-    `,
-      )
+        `;
+      })
       .join("");
 
-    // Gắn sự kiện Xóa đánh giá
+    // Gắn sự kiện Xóa đánh giá (Sử dụng ConfirmModal)
     document.querySelectorAll(".btn-del-review").forEach((btn) => {
       btn.addEventListener("click", async (e) => {
-        const id = e.currentTarget.getAttribute("data-id");
-        if (confirm("Bạn có chắc muốn xóa đánh giá này?")) {
-          e.currentTarget.innerHTML =
-            '<i class="fa-solid fa-spinner fa-spin"></i>';
-          e.currentTarget.disabled = true;
+        // 1. LƯU LẠI NÚT VÀO BIẾN TRƯỚC KHI AWAIT
+        const currentBtn = e.currentTarget;
+        const id = currentBtn.getAttribute("data-id");
+
+        const isConfirmed = await window.ConfirmModal.show(
+          "Bạn có chắc muốn xóa đánh giá này không?",
+          "Xóa",
+          "Hủy",
+          "danger",
+        );
+
+        if (isConfirmed) {
+          // 2. DÙNG BIẾN ĐÃ LƯU ĐỂ THAY ĐỔI GIAO DIỆN
+          currentBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          currentBtn.disabled = true;
 
           await supabase.from("reviews").delete().eq("id", id);
           loadMyReviews(); // Tải lại danh sách ngay lập tức
@@ -156,5 +180,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // Gọi hàm load dữ liệu đánh giá
   loadMyReviews();
+
+  // ===============================================
+  // 6. XỬ LÝ ĐĂNG XUẤT (Sử dụng ConfirmModal)
+  // ===============================================
+  const btnLogout = document.getElementById("btn-logout-profile");
+  if (btnLogout) {
+    btnLogout.addEventListener("click", async () => {
+      const isConfirmed = await window.ConfirmModal.show(
+        "Bạn có chắc chắn muốn thoát tài khoản?",
+        "Thoát ngay",
+        "Hủy",
+        "danger",
+      );
+
+      if (isConfirmed) {
+        btnLogout.innerHTML =
+          '<i class="fa-solid fa-spinner fa-spin"></i> Đang thoát...';
+        await supabase.auth.signOut();
+        window.location.href = "index.html"; // Chuyển về trang bản đồ sau khi thoát
+      }
+    });
+  }
 });

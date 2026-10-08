@@ -97,11 +97,21 @@ window.DashboardLocations = {
 
     document.querySelectorAll(".delete").forEach((btn) =>
       btn.addEventListener("click", async (e) => {
-        const id = e.currentTarget.getAttribute("data-id");
-        if (confirm("Bạn có chắc chắn muốn xóa địa điểm này?")) {
-          e.currentTarget.innerHTML =
-            '<i class="fa-solid fa-spinner fa-spin"></i>';
-          e.currentTarget.disabled = true;
+        // ĐÃ SỬA: LƯU BIẾN TRƯỚC KHI AWAIT
+        const currentBtn = e.currentTarget;
+        const id = currentBtn.getAttribute("data-id");
+
+        // GỌI MODAL XÁC NHẬN MỚI
+        const isConfirmed = await window.ConfirmModal.show(
+          "Bạn có chắc chắn muốn xóa địa điểm này?",
+          "Xóa",
+          "Hủy",
+          "danger",
+        );
+
+        if (isConfirmed) {
+          currentBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          currentBtn.disabled = true;
 
           await supabase.from("locations").delete().eq("id", id);
           if (window.Toast) window.Toast.show("Đã xóa địa điểm", "success");
@@ -124,7 +134,6 @@ window.DashboardLocations = {
 
         // Reset state & UI ảnh
         self.currentUploadedUrls = item.image_urls || [];
-        // Nếu có image_url cũ (chưa migrate hết), gom vào mảng luôn
         if (
           item.image_url &&
           !self.currentUploadedUrls.includes(item.image_url)
@@ -250,6 +259,7 @@ window.DashboardLocations = {
     document
       .getElementById("save-location-btn")
       .addEventListener("click", async (e) => {
+        // e.target an toàn vì khai báo ngay đầu sự kiện, không bị đứt đoạn bởi await
         const btn = e.target;
         const supabase = window.DashboardApp.supabase;
         const currentUser = window.DashboardApp.currentUser;
@@ -277,9 +287,8 @@ window.DashboardLocations = {
         const fileInput = document.getElementById("loc-image-file");
         const files = Array.from(fileInput.files);
 
-        let finalImageUrls = [...self.currentUploadedUrls]; // Lấy danh sách link ảnh cũ hiện còn
+        let finalImageUrls = [...self.currentUploadedUrls];
 
-        // Nếu có file local mới -> Upload tất cả song song
         if (files.length > 0) {
           document.getElementById("upload-status").style.display = "block";
 
@@ -300,7 +309,6 @@ window.DashboardLocations = {
           });
 
           const newUrls = await Promise.all(uploadPromises);
-          // Lọc bỏ null (các file lỗi) và gom chung vào mảng final
           finalImageUrls = finalImageUrls.concat(
             newUrls.filter((url) => url !== null),
           );
@@ -311,7 +319,6 @@ window.DashboardLocations = {
         const finalStatus =
           currentProfile?.role === "admin" ? "active" : "pending";
 
-        // Payload mới dùng `image_urls`
         const payload = {
           category_id,
           name,
@@ -319,7 +326,7 @@ window.DashboardLocations = {
           lat,
           lng,
           image_urls: finalImageUrls,
-          image_url: finalImageUrls[0] || null, // Vẫn lưu 1 cái vào cột cũ để dự phòng hiển thị (Thumbnail)
+          image_url: finalImageUrls[0] || null,
         };
 
         if (locId) {

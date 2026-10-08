@@ -57,10 +57,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.DashboardUsers.init();
   }
 
-  // 4. XỬ LÝ LOGOUT
+  // 4. XỬ LÝ LOGOUT CÓ MODAL XÁC NHẬN
   logoutBtn.addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    window.location.href = "auth.html";
+    const isConfirmed = await window.ConfirmModal.show(
+      "Bạn có chắc chắn muốn thoát phiên quản trị?",
+      "Thoát ngay",
+      "Hủy",
+      "danger",
+    );
+
+    if (isConfirmed) {
+      await supabase.auth.signOut();
+      window.location.href = "auth.html";
+    }
   });
 
   // 5. XỬ LÝ GIAO DIỆN RESPONSIVE MOBILE
