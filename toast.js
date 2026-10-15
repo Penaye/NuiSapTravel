@@ -78,3 +78,53 @@ window.ConfirmModal = {
     });
   },
 };
+
+// ==========================================
+// CUSTOM ALERT MODAL (Thông báo 1 nút bấm)
+// ==========================================
+window.AlertModal = {
+  show: function (title, message, type = "success") {
+    return new Promise((resolve) => {
+      const overlay = document.createElement("div");
+      overlay.className = "custom-confirm-overlay";
+
+      // Chọn màu và icon theo loại thông báo
+      const color =
+        type === "success"
+          ? "#10b981"
+          : type === "error"
+            ? "#ef4444"
+            : "#f59e0b";
+      const icon =
+        type === "success"
+          ? "fa-trophy"
+          : type === "error"
+            ? "fa-location-crosshairs"
+            : "fa-bell";
+      const btnText = type === "success" ? "Tuyệt vời!" : "Đã hiểu";
+
+      overlay.innerHTML = `
+        <div class="custom-confirm-box">
+          <i class="fa-solid ${icon}" style="color: ${color}; font-size: 56px; margin-bottom: 16px;"></i>
+          <h3 style="margin: 0 0 8px; color: #1e293b; font-size: 20px;">${title}</h3>
+          <p style="margin: 0 0 24px; color: #64748b; font-size: 15px; line-height: 1.5;">${message}</p>
+          <button class="btn-confirm" style="background-color: ${color}; width: 100%; padding: 12px; border-radius: 10px; border: none; color: white; font-weight: 600; font-size: 15px; cursor: pointer; transition: 0.2s;">
+            ${btnText}
+          </button>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      const close = () => {
+        overlay.style.opacity = "0";
+        setTimeout(() => {
+          overlay.remove();
+          resolve();
+        }, 200);
+      };
+
+      overlay.querySelector(".btn-confirm").onclick = close;
+    });
+  },
+};

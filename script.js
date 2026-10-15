@@ -1,55 +1,11 @@
 // ==========================================
-// ĐĂNG KÝ SERVICE WORKER (PWA) - TẠM TẮT KHI DEV
+// BẢN ĐỒ DU LỊCH NÚI SẬP - SCRIPT
+// Tương thích 100% Giao diện
 // ==========================================
-/* 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('sw.js')
-      .then((reg) => console.log('Service Worker đăng ký thành công:', reg.scope))
-      .catch((err) => console.log('Lỗi đăng ký Service Worker:', err));
-  });
-}
-*/
 
-// ==========================================
-// CẤU HÌNH AUDIO TRỢ LÝ ẢO (TEXT-TO-SPEECH)
-// ==========================================
 const synth = window.speechSynthesis;
 let currentUtterance = null;
 
-function updateAudioBtnUI(isPlaying) {
-  const btn = document.getElementById("btn-audio");
-  if (!btn) return;
-  if (isPlaying) {
-    btn.innerHTML = `<i class="fa-solid fa-circle-pause"></i> Dừng`;
-    btn.classList.add("playing");
-  } else {
-    btn.innerHTML = `<i class="fa-solid fa-volume-high"></i> Nghe`;
-    btn.classList.remove("playing");
-  }
-}
-
-// ==========================================
-// THUẬT TOÁN HAVERSINE (TÍNH KHOẢNG CÁCH)
-// ==========================================
-function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Bán kính trái đất (km)
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * (Math.PI / 180)) *
-      Math.cos(lat2 * (Math.PI / 180)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-// ==========================================
-// 1. KHỞI TẠO BẢN ĐỒ MAPBOX
-// ==========================================
 const regionCoords = [
   [105.28841819246551, 10.25976845936709],
   [105.26661719912855, 10.240004604385135],
@@ -66,7 +22,7 @@ const lngs = regionCoords.map((c) => c[0]);
 const lats = regionCoords.map((c) => c[1]);
 
 let map;
-let currentMapStyle = "streets-v12";
+let currentMapStyle = "streets";
 let activeLocationId = null;
 window.allLocations = [];
 let currentFilteredLocations = [];
@@ -75,505 +31,83 @@ let userLocation = null;
 let userMarker = null;
 let currentAuthUser = null;
 let userBookmarkedIds = [];
-
-try {
-  mapboxgl.accessToken =
-    "pk.eyJ1IjoidGFuZGF0MjAwOSIsImEiOiJjbXVtYWF1NGowMGNmMnlvbW9ndjJzNGkwIn0.wNCub38RhKYzfaod_-21VA";
-  map = new mapboxgl.Map({
-    container: "map",
-    style: `mapbox://styles/mapbox/${currentMapStyle}`,
-    projection: "globe",
-    zoom: 13,
-    maxZoom: 18.5, // FIX: Ngăn chặn vỡ hạt ảnh vệ tinh khi zoom quá gần
-    center: [105.267768, 10.262644],
-    maxBounds: [
-      [Math.min(...lngs) - 0.2, Math.min(...lats) - 0.2],
-      [Math.max(...lngs) + 0.2, Math.max(...lats) + 0.2],
-    ],
-  });
-  map.addControl(new mapboxgl.NavigationControl());
-  initGeolocation();
-} catch (err) {
-  console.error("Lỗi khởi tạo Mapbox:", err);
-}
+let itineraryMarkers = [];
 
 const supabaseClient = window.supabaseClient;
 
-// ==========================================
-// 2. ĐỊNH VỊ VÀ CHỈ ĐƯỜNG
-// ==========================================
-function initGeolocation() {
-  if ("geolocation" in navigator) {
-    navigator.geolocation.watchPosition(
-      (pos) => {
-        userLocation = [pos.coords.longitude, pos.coords.latitude];
-        if (!userMarker && map) {
-          const el = document.createElement("div");
-          el.style.backgroundColor = "#2563eb";
-          el.style.width = "16px";
-          el.style.height = "16px";
-          el.style.borderRadius = "50%";
-          el.style.border = "3px solid white";
-          el.style.boxShadow = "0 0 8px rgba(0,0,0,0.4)";
-          userMarker = new mapboxgl.Marker(el)
-            .setLngLat(userLocation)
-            .setPopup(
-              new mapboxgl.Popup({ offset: 15 }).setText("Vị trí của bạn"),
-            )
-            .addTo(map);
-        } else if (userMarker) {
-          userMarker.setLngLat(userLocation);
-        }
-      },
-      (err) => {
-        console.log("Chưa thể lấy vị trí GPS chính xác:", err.message);
-      },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
-    );
-  }
+// THUẬT TOÁN TÍNH KHOẢNG CÁCH (Haversine)
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
-async function drawRoute(startCoords, endCoords) {
-  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startCoords[0]},${startCoords[1]};${endCoords[0]},${endCoords[1]}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data.routes && data.routes.length > 0) {
-      const route = data.routes[0].geometry;
-      if (map.getSource("route-src")) map.getSource("route-src").setData(route);
-      const bounds = route.coordinates.reduce(
-        (b, coord) => b.extend(coord),
-        new mapboxgl.LngLatBounds(route.coordinates[0], route.coordinates[0]),
-      );
-      map.fitBounds(bounds, { padding: 60 });
-    }
-  } catch (err) {
-    if (window.Toast) window.Toast.show("Lỗi chỉ đường.", "error");
-  }
-}
-
-// ==========================================
-// 3. SIDEBAR / BOTTOM SHEET LOGIC
-// ==========================================
-const sidebar = document.getElementById("info-sidebar");
-
-let touchStartY = 0;
-sidebar.addEventListener(
-  "touchstart",
-  (e) => {
-    touchStartY = e.changedTouches[0].screenY;
-  },
-  { passive: true },
-);
-
-sidebar.addEventListener(
-  "touchend",
-  (e) => {
-    const touchEndY = e.changedTouches[0].screenY;
-    if (touchEndY - touchStartY > 100) {
-      sidebar.classList.remove("open");
-      if (synth.speaking) synth.cancel(); // Ngắt audio khi đóng
-      updateAudioBtnUI(false);
-    }
-  },
-  { passive: true },
-);
-
-if (document.getElementById("close-sidebar")) {
-  document.getElementById("close-sidebar").addEventListener("click", () => {
-    sidebar.classList.remove("open");
-    if (synth.speaking) synth.cancel(); // Ngắt audio khi đóng
-    updateAudioBtnUI(false);
-  });
-}
-
-function openLocationSidebar(feature) {
-  activeLocationId = feature.id || feature.properties.id;
-  loadLocationReviews(activeLocationId);
-
-  document.getElementById("sb-title").textContent = feature.properties.name;
-  document.getElementById("sb-category").textContent =
-    feature.properties.category;
-  document.getElementById("sb-desc").textContent =
-    feature.properties.description;
-
-  const distanceTag = document.getElementById("sb-distance");
-  if (userLocation) {
-    const dist = getDistanceFromLatLonInKm(
-      userLocation[1],
-      userLocation[0],
-      feature.geometry.coordinates[1],
-      feature.geometry.coordinates[0],
-    );
-    distanceTag.style.display = "inline-block";
-    distanceTag.innerHTML = `<i class="fa-solid fa-location-arrow"></i> Cách ${dist.toFixed(1)} km`;
-  } else {
-    distanceTag.style.display = "none";
-  }
-
-  let images = [];
-  try {
-    images =
-      typeof feature.properties.imageUrls === "string"
-        ? JSON.parse(feature.properties.imageUrls)
-        : feature.properties.imageUrls;
-  } catch (e) {
-    images = ["https://placehold.co/600x400/ccc/white?text=No+Image"];
-  }
-
-  const carouselContainer = document.getElementById("sb-carousel");
-  const prevBtn = document.getElementById("sb-carousel-prev");
-  const nextBtn = document.getElementById("sb-carousel-next");
-  const indicatorsContainer = document.getElementById("sb-carousel-indicators");
-
-  carouselContainer.innerHTML = "";
-  indicatorsContainer.innerHTML = "";
-
-  images.forEach((url, index) => {
-    const img = document.createElement("img");
-    img.src = url;
-    carouselContainer.appendChild(img);
-
-    const ind = document.createElement("div");
-    ind.className = `indicator ${index === 0 ? "active" : ""}`;
-    indicatorsContainer.appendChild(ind);
-  });
-
-  let currentSlide = 0;
-  const totalSlides = images.length;
-
-  if (totalSlides <= 1) {
-    prevBtn.style.display = "none";
-    nextBtn.style.display = "none";
-    indicatorsContainer.style.display = "none";
-  } else {
-    prevBtn.style.display = "flex";
-    nextBtn.style.display = "flex";
-    indicatorsContainer.style.display = "flex";
-  }
-
-  function updateSlider() {
-    carouselContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
-    Array.from(indicatorsContainer.children).forEach((dot, idx) => {
-      dot.classList.toggle("active", idx === currentSlide);
-    });
-  }
-
-  prevBtn.onclick = () => {
-    currentSlide = currentSlide > 0 ? currentSlide - 1 : totalSlides - 1;
-    updateSlider();
-  };
-
-  nextBtn.onclick = () => {
-    currentSlide = currentSlide < totalSlides - 1 ? currentSlide + 1 : 0;
-    updateSlider();
-  };
-
-  Array.from(indicatorsContainer.children).forEach((dot, idx) => {
-    dot.onclick = () => {
-      currentSlide = idx;
-      updateSlider();
-    };
-  });
-
-  updateBookmarkButtonUI();
-
-  const btnDir = document.getElementById("btn-directions");
-  if (btnDir) {
-    btnDir.onclick = () => {
-      if (userLocation) {
-        drawRoute(userLocation, feature.geometry.coordinates);
-        if (window.innerWidth <= 768) sidebar.classList.remove("open");
-      } else {
-        window.open(
-          `https://www.google.com/maps/dir/?api=1&destination=${feature.geometry.coordinates[1]},${feature.geometry.coordinates[0]}`,
-          "_blank",
-        );
-      }
-    };
-  }
-
-  // --- AUDIO GUIDE LOGIC ---
-  if (synth.speaking) synth.cancel();
-  updateAudioBtnUI(false);
-
-  const btnAudio = document.getElementById("btn-audio");
-  if (btnAudio) {
-    btnAudio.onclick = () => {
-      if (synth.speaking && !synth.paused) {
-        synth.pause();
-        updateAudioBtnUI(false);
-      } else if (synth.paused) {
-        synth.resume();
-        updateAudioBtnUI(true);
-      } else {
-        const textToRead = document.getElementById("sb-desc").textContent;
-        if (!textToRead) return;
-        currentUtterance = new SpeechSynthesisUtterance(textToRead);
-        currentUtterance.lang = "vi-VN";
-        currentUtterance.rate = 1.0;
-
-        currentUtterance.onend = () => updateAudioBtnUI(false);
-        currentUtterance.onerror = () => updateAudioBtnUI(false);
-
-        synth.speak(currentUtterance);
-        updateAudioBtnUI(true);
-      }
-    };
-  }
-
-  // --- GAMIFICATION CHECK-IN LOGIC ---
-  const btnCheckin = document.getElementById("btn-checkin");
-  if (btnCheckin) {
-    btnCheckin.onclick = async () => {
-      if (!currentAuthUser) {
-        if (window.Toast)
-          window.Toast.show("Cần đăng nhập để Check-in nhận huy hiệu!", "info");
-        return;
-      }
-      if (!userLocation) {
-        if (window.Toast)
-          window.Toast.show("Đang dò tọa độ GPS của bạn...", "info");
-        return;
-      }
-
-      const dist = getDistanceFromLatLonInKm(
-        userLocation[1],
-        userLocation[0],
-        feature.geometry.coordinates[1],
-        feature.geometry.coordinates[0],
-      );
-
-      if (dist <= 0.05) {
-        // Bán kính 50m
-        btnCheckin.disabled = true;
-        btnCheckin.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...`;
-
-        // Kiểm tra xem user đã check-in điểm này chưa
-        const { data: existing } = await supabaseClient
-          .from("check_ins")
-          .select("id")
-          .eq("user_id", currentAuthUser.id)
-          .eq("location_id", activeLocationId);
-
-        if (existing && existing.length > 0) {
-          if (window.Toast)
-            window.Toast.show(
-              "Bạn đã Check-in địa điểm này trước đây rồi!",
-              "info",
-            );
-        } else {
-          // Lưu Check-in mới
-          const userName =
-            currentAuthUser.user_metadata?.full_name ||
-            currentAuthUser.email.split("@")[0];
-          const { error } = await supabaseClient.from("check_ins").insert([
-            {
-              user_id: currentAuthUser.id,
-              location_id: activeLocationId,
-              user_name: userName,
-            },
-          ]);
-
-          if (error) {
-            if (window.Toast)
-              window.Toast.show("Lỗi hệ thống: " + error.message, "error");
-          } else {
-            if (window.Toast)
-              window.Toast.show(
-                "🎉 Check-in thành công! Bạn nhận được 1 Huy hiệu mới.",
-                "success",
-              );
-          }
-        }
-        btnCheckin.disabled = false;
-        btnCheckin.innerHTML = `<i class="fa-solid fa-map-pin"></i> Check-in`;
-      } else {
-        if (window.Toast)
-          window.Toast.show(
-            `Bạn cách vị trí này ${(dist * 1000).toFixed(0)}m. Hãy đến gần hơn (<50m) để Check-in!`,
-            "error",
-          );
-      }
-    };
-  }
-
-  sidebar.classList.add("open");
-}
-
-function updateBookmarkButtonUI() {
-  const btn = document.getElementById("btn-bookmark");
+function updateAudioBtnUI(isPlaying) {
+  const btn = document.getElementById("btn-audio");
   if (!btn) return;
-  if (userBookmarkedIds.includes(activeLocationId)) {
-    btn.classList.add("active");
-    btn.innerHTML = `<i class="fa-solid fa-bookmark"></i> Đã lưu`;
+  if (isPlaying) {
+    btn.innerHTML = `<i class="fa-solid fa-circle-pause"></i> Dừng`;
+    btn.style.background = "#ef4444";
   } else {
-    btn.classList.remove("active");
-    btn.innerHTML = `<i class="fa-regular fa-bookmark"></i> Lưu`;
+    btn.innerHTML = `<i class="fa-solid fa-volume-high"></i> Nghe`;
+    btn.style.background = "#8b5cf6";
   }
 }
 
-document.getElementById("btn-bookmark").addEventListener("click", async () => {
-  if (!currentAuthUser) {
-    if (window.Toast) return window.Toast.show("Cần đăng nhập!", "info");
-  }
-  const btn = document.getElementById("btn-bookmark");
-  const isBookmarked = userBookmarkedIds.includes(activeLocationId);
-  btn.disabled = true;
-  if (isBookmarked) {
-    const { error } = await supabaseClient
-      .from("user_bookmarks")
-      .delete()
-      .eq("user_id", currentAuthUser.id)
-      .eq("location_id", activeLocationId);
-    if (!error)
-      userBookmarkedIds = userBookmarkedIds.filter(
-        (id) => id !== activeLocationId,
-      );
-  } else {
-    const { error } = await supabaseClient
-      .from("user_bookmarks")
-      .insert([{ user_id: currentAuthUser.id, location_id: activeLocationId }]);
-    if (!error) userBookmarkedIds.push(activeLocationId);
-  }
-  btn.disabled = false;
-  updateBookmarkButtonUI();
-});
-
-function renderBookmarksModal() {
-  const listEl = document.getElementById("bookmarks-list");
-  listEl.innerHTML = "";
-  const bLocs = window.allLocations.filter((loc) =>
-    userBookmarkedIds.includes(loc.id),
-  );
-  if (bLocs.length === 0)
-    return (listEl.innerHTML = "<p style='text-align:center;'>Trống.</p>");
-  bLocs.forEach((loc) => {
-    const li = document.createElement("li");
-    li.className = "bm-item";
-
-    let thumbUrl = "https://placehold.co/600x400/ccc/white?text=No+Image";
-    try {
-      const imgs =
-        typeof loc.properties.imageUrls === "string"
-          ? JSON.parse(loc.properties.imageUrls)
-          : loc.properties.imageUrls;
-      if (imgs && imgs.length > 0) thumbUrl = imgs[0];
-    } catch (e) {}
-
-    li.innerHTML = `<img src="${thumbUrl}"><div class="bm-item-info"><h4>${loc.properties.name}</h4><p>${loc.properties.category}</p></div>`;
-    li.addEventListener("click", () => {
-      document.getElementById("bookmarks-modal").classList.remove("active");
-      map.flyTo({ center: loc.geometry.coordinates, zoom: 15.5 });
-      openLocationSidebar(loc);
-    });
-    listEl.appendChild(li);
-  });
-}
-document
-  .getElementById("close-bm-modal")
-  ?.addEventListener("click", () =>
-    document.getElementById("bookmarks-modal").classList.remove("active"),
-  );
-
-// ==========================================
-// 4. TẢI DỮ LIỆU TỪ SUPABASE
-// ==========================================
-function processLocationsData(data) {
-  window.allLocations = data.map((item) => {
-    let arrUrls = [];
-    if (item.image_urls && item.image_urls.length > 0) {
-      arrUrls = item.image_urls;
-    } else if (item.image_url) {
-      arrUrls = [item.image_url];
-    } else {
-      arrUrls = ["https://placehold.co/600x400/ccc/white?text=No+Image"];
-    }
-
-    return {
-      id: item.id,
-      type: "Feature",
-      geometry: { type: "Point", coordinates: [item.lng, item.lat] },
-      properties: {
-        id: item.id,
-        name: item.name,
-        category: item.categories?.name || "Khác",
-        description: item.description,
-        imageUrls: JSON.stringify(arrUrls),
-      },
-    };
-  });
-  currentFilteredLocations = [...window.allLocations];
-  updateMapSourceData();
-}
-
-async function fetchAndRenderData() {
-  if (!supabaseClient || !map) return;
+function removeLoadingScreen() {
   const loader = document.getElementById("global-loader");
-  if (loader) loader.style.display = "flex";
+  if (loader && loader.style.display !== "none") {
+    loader.style.opacity = "0";
+    setTimeout(() => (loader.style.display = "none"), 300);
+  }
+}
 
+// ==========================================
+// 1. KHỞI TẠO BẢN ĐỒ MAPLIBRE
+// ==========================================
+function initMap() {
   try {
-    const { data, error } = await supabaseClient
-      .from("locations")
-      .select("*, categories!locations_category_id_fkey(name)")
-      .eq("status", "active");
-
-    if (error) throw error;
-
-    localStorage.setItem("nuisap_locations_cache", JSON.stringify(data));
-    processLocationsData(data);
-  } catch (e) {
-    console.warn("Lỗi mạng hoặc Supabase, thử tải từ LocalStorage:", e);
-    const cachedData = localStorage.getItem("nuisap_locations_cache");
-    if (cachedData) {
-      processLocationsData(JSON.parse(cachedData));
-    } else {
-      if (window.Toast)
-        window.Toast.show(
-          "Không có kết nối mạng và không có dữ liệu ngoại tuyến để hiển thị.",
-          "error",
-        );
-    }
-  } finally {
-    if (loader) {
-      loader.style.opacity = "0";
-      setTimeout(() => (loader.style.display = "none"), 300);
-    }
-  }
-}
-
-function updateMapSourceData() {
-  const src = map.getSource("Nuisaptravel-src");
-  if (src)
-    src.setData({
-      type: "FeatureCollection",
-      features: currentFilteredLocations,
+    map = new maplibregl.Map({
+      container: "map",
+      style: "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json",
+      center: [105.267768, 10.262644],
+      zoom: 13,
+      maxZoom: 18.5,
+      maxBounds: [
+        [Math.min(...lngs) - 0.2, Math.min(...lats) - 0.2],
+        [Math.max(...lngs) + 0.2, Math.max(...lats) + 0.2],
+      ],
     });
-}
 
-// ==========================================
-// 5. LỚP BẢN ĐỒ & TƯƠNG TÁC CHUỘT
-// ==========================================
-function addMapLayers() {
-  map.getStyle().layers.forEach((layer) => {
-    if (layer.id.includes("poi-label") || layer.id.includes("transit-label"))
-      map.setLayoutProperty(layer.id, "visibility", "none");
-  });
+    map.addControl(new maplibregl.NavigationControl(), "bottom-right");
+    initGeolocation();
 
-  if (currentMapStyle === "satellite-streets-v12") {
-    if (!map.getSource("mapbox-dem")) {
-      map.addSource("mapbox-dem", {
-        type: "raster-dem",
-        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-        tileSize: 512,
-        maxzoom: 14,
-      });
-    }
-    map.setTerrain({ source: "mapbox-dem", exaggeration: 1.5 });
-  } else {
-    map.setTerrain(null);
+    map.on("load", async () => {
+      await fetchAndRenderData();
+      addMapLayers();
+      checkGlobalAuth();
+      removeLoadingScreen();
+    });
+
+    map.on("error", (e) => {
+      console.warn("MapLibre Error:", e);
+      removeLoadingScreen();
+    });
+  } catch (err) {
+    console.error("Lỗi khởi tạo MapLibre:", err);
+    removeLoadingScreen();
   }
+}
+setTimeout(() => removeLoadingScreen(), 3500);
 
+function addMapLayers() {
   const maskGeoJSON = {
     type: "FeatureCollection",
     features: [
@@ -604,194 +138,124 @@ function addMapLayers() {
       },
     ],
   };
-  map.addSource("mask-src", { type: "geojson", data: maskGeoJSON });
-  map.addLayer({
-    id: "mask-layer",
-    type: "fill",
-    source: "mask-src",
-    paint: { "fill-color": "#000000", "fill-opacity": 0.65 },
-  });
-  map.addSource("boundary-src", { type: "geojson", data: boundaryGeoJSON });
-  map.addLayer({
-    id: "boundary-line",
-    type: "line",
-    source: "boundary-src",
-    paint: {
-      "line-color": "#ff0000",
-      "line-width": 3,
-      "line-dasharray": [2, 2],
-    },
-  });
 
-  map.addSource("route-src", {
-    type: "geojson",
-    data: {
-      type: "Feature",
-      properties: {},
-      geometry: { type: "LineString", coordinates: [] },
-    },
-  });
-  map.addLayer({
-    id: "route-line",
-    type: "line",
-    source: "route-src",
-    layout: { "line-join": "round", "line-cap": "round" },
-    paint: { "line-color": "#0052cc", "line-width": 6, "line-opacity": 0.85 },
-  });
-
-  map.addSource("Nuisaptravel-src", {
-    type: "geojson",
-    data: { type: "FeatureCollection", features: currentFilteredLocations },
-  });
-
-  map.addLayer({
-    id: "unclustered-point",
-    type: "circle",
-    source: "Nuisaptravel-src",
-    minzoom: 11.5,
-    paint: {
-      "circle-color": [
-        "match",
-        ["get", "category"],
-        "Du lịch",
-        "#2E8B57",
-        "Quán ăn",
-        "#FF8C00",
-        "Khách sạn",
-        "#800080",
-        "#0052cc",
-      ],
-      "circle-radius": [
-        "case",
-        ["boolean", ["feature-state", "hover"], false],
-        12,
-        8,
-      ],
-      "circle-stroke-width": [
-        "case",
-        ["boolean", ["feature-state", "hover"], false],
-        2,
-        1.5,
-      ],
-      "circle-stroke-color": "#ffffff",
-      "circle-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 0, 12, 1],
-      "circle-stroke-opacity": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        11.5,
-        0,
-        12,
-        1,
-      ],
-    },
-  });
-
-  map.addLayer({
-    id: "unclustered-icon",
-    type: "symbol",
-    source: "Nuisaptravel-src",
-    minzoom: 11.5,
-    layout: {
-      "icon-image": "star-15",
-      "icon-size": 0.55,
-      "text-field": ["get", "name"],
-      "text-offset": [0, 1],
-      "text-anchor": "top",
-      "text-size": 13,
-    },
-    paint: {
-      "icon-color": "#ffffff",
-      "text-color": [
-        "match",
-        ["get", "category"],
-        "Du lịch",
-        "#1C5435",
-        "Quán ăn",
-        "#B86500",
-        "Khách sạn",
-        "#4B0082",
-        "#000000",
-      ],
-      "text-halo-color": "#ffffff",
-      "text-halo-width": 2,
-      "icon-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 0, 12, 1],
-      "text-opacity": ["interpolate", ["linear"], ["zoom"], 11.5, 0, 12, 1],
-    },
-  });
-}
-
-if (map) {
-  map.on("style.load", () => {
-    map.setFog({
-      color: "rgb(186, 210, 235)",
-      "high-color": "rgb(36, 92, 223)",
-      "horizon-blend": 0.02,
-      "space-color": "rgb(11, 11, 25)",
-      "star-intensity": 0.6,
+  if (!map.getSource("mask-src")) {
+    map.addSource("mask-src", { type: "geojson", data: maskGeoJSON });
+    map.addLayer({
+      id: "mask-layer",
+      type: "fill",
+      source: "mask-src",
+      paint: { "fill-color": "#000000", "fill-opacity": 0.65 },
     });
-    addMapLayers();
-    if (window.allLocations.length === 0) fetchAndRenderData();
-  });
+    map.addSource("boundary-src", { type: "geojson", data: boundaryGeoJSON });
+    map.addLayer({
+      id: "boundary-line",
+      type: "line",
+      source: "boundary-src",
+      paint: {
+        "line-color": "#ef4444",
+        "line-width": 3,
+        "line-dasharray": [2, 2],
+      },
+    });
+    map.addSource("route-src", {
+      type: "geojson",
+      data: {
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: [] },
+      },
+    });
+    map.addLayer({
+      id: "route-line",
+      type: "line",
+      source: "route-src",
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: { "line-color": "#0052cc", "line-width": 6, "line-opacity": 0.85 },
+    });
+    map.addSource("Nuisaptravel-src", {
+      type: "geojson",
+      data: { type: "FeatureCollection", features: currentFilteredLocations },
+    });
+  }
 
-  let hoveredUnclusteredId = null;
+  if (!map.getLayer("unclustered-point")) {
+    map.addLayer({
+      id: "unclustered-point",
+      type: "circle",
+      source: "Nuisaptravel-src",
+      paint: {
+        "circle-color": [
+          "match",
+          ["get", "category"],
+          "Du lịch",
+          "#10b981",
+          "Quán ăn",
+          "#f59e0b",
+          "Khách sạn",
+          "#8b5cf6",
+          "#3b82f6",
+        ],
+        "circle-radius": [
+          "case",
+          ["boolean", ["feature-state", "hover"], false],
+          12,
+          8,
+        ],
+        "circle-stroke-width": 2,
+        "circle-stroke-color": "#ffffff",
+      },
+    });
+    map.addLayer({
+      id: "unclustered-icon",
+      type: "symbol",
+      source: "Nuisaptravel-src",
+      layout: {
+        "text-field": ["get", "name"],
+        "text-offset": [0, 1],
+        "text-anchor": "top",
+        "text-size": 13,
+      },
+      paint: {
+        "text-color": "#1e293b",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 2,
+      },
+    });
+  }
 
-  // NHẬN DIỆN THIẾT BỊ: Kiểm tra xem người dùng đang dùng Mobile hay PC
-  const isMobileDevice =
-    window.innerWidth <= 768 ||
-    "ontouchstart" in window ||
-    navigator.maxTouchPoints > 0;
-
-  if (isMobileDevice) {
-    // ==========================================
-    // CÁCH 1: XỬ LÝ TRÊN ĐIỆN THOẠI (MOBILE)
-    // ==========================================
-
-    // Tạo vùng đệm 25px để ngón tay dễ chạm trúng
+  let hoveredId = null;
+  const isMobile = window.innerWidth <= 768 || "ontouchstart" in window;
+  if (isMobile) {
     map.on("click", (e) => {
       const bbox = [
         [e.point.x - 25, e.point.y - 25],
         [e.point.x + 25, e.point.y + 25],
       ];
-
-      const features = map.queryRenderedFeatures(bbox, {
+      const f = map.queryRenderedFeatures(bbox, {
         layers: ["unclustered-point", "unclustered-icon"],
       });
-
-      if (features.length > 0) {
-        const feature = features[0];
-
-        openLocationSidebar(feature);
-
-        // Camera: Đẩy marker nhích lên trên để không bị Bottom Sheet che mất
+      if (f.length > 0) {
+        openLocationSidebar(f[0]);
         map.flyTo({
-          center: feature.geometry.coordinates,
+          center: f[0].geometry.coordinates,
           zoom: 15.5,
-          padding: { bottom: 350 }, // Đẩy lên 350px
+          padding: { bottom: 350 },
           speed: 1.2,
         });
       }
     });
   } else {
-    // ==========================================
-    // CÁCH 2: XỬ LÝ TRÊN MÁY TÍNH (PC)
-    // ==========================================
-
-    // Bấm chính xác vào chấm tròn (Point) bằng chuột
     map.on("click", "unclustered-point", (e) => {
       if (!e.features.length) return;
       openLocationSidebar(e.features[0]);
-
-      // Camera: Đẩy marker nhích sang trái để không bị Sidebar phải che mất
       map.flyTo({
         center: e.features[0].geometry.coordinates,
         zoom: 15.5,
-        padding: { right: 400 }, // Đẩy sang trái 400px
+        padding: { right: 400 },
         speed: 1.2,
       });
     });
-
-    // Cho phép bấm vào cả Tên địa điểm (Label Text)
     map.on("click", "unclustered-icon", (e) => {
       if (!e.features.length) return;
       openLocationSidebar(e.features[0]);
@@ -802,195 +266,455 @@ if (map) {
         speed: 1.2,
       });
     });
-
-    // Hiệu ứng Hover chuột (Chỉ cần thiết trên PC)
     map.on("mousemove", "unclustered-point", (e) => {
       map.getCanvas().style.cursor = "pointer";
       if (e.features.length > 0) {
-        if (hoveredUnclusteredId !== null) {
+        if (hoveredId !== null)
           map.setFeatureState(
-            { source: "Nuisaptravel-src", id: hoveredUnclusteredId },
+            { source: "Nuisaptravel-src", id: hoveredId },
             { hover: false },
           );
-        }
-        hoveredUnclusteredId = e.features[0].id;
+        hoveredId = e.features[0].id;
         map.setFeatureState(
-          { source: "Nuisaptravel-src", id: hoveredUnclusteredId },
+          { source: "Nuisaptravel-src", id: hoveredId },
           { hover: true },
         );
       }
     });
-
     map.on("mouseleave", "unclustered-point", () => {
       map.getCanvas().style.cursor = "";
-      if (hoveredUnclusteredId !== null) {
+      if (hoveredId !== null)
         map.setFeatureState(
-          { source: "Nuisaptravel-src", id: hoveredUnclusteredId },
+          { source: "Nuisaptravel-src", id: hoveredId },
           { hover: false },
         );
-      }
-      hoveredUnclusteredId = null;
-    });
-
-    // Đổi con trỏ thành bàn tay khi rê vào Tên địa điểm
-    map.on("mousemove", "unclustered-icon", () => {
-      map.getCanvas().style.cursor = "pointer";
-    });
-    map.on("mouseleave", "unclustered-icon", () => {
-      map.getCanvas().style.cursor = "";
+      hoveredId = null;
     });
   }
 }
 
-// BỘ LỌC GẦN TÔI & DANH MỤC
+function updateMapSourceData() {
+  const src = map.getSource("Nuisaptravel-src");
+  if (src)
+    src.setData({
+      type: "FeatureCollection",
+      features: currentFilteredLocations,
+    });
+}
+
+async function fetchAndRenderData() {
+  if (!supabaseClient) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from("locations")
+      .select("*, categories!locations_category_id_fkey(name)")
+      .eq("status", "active");
+    if (error) throw error;
+    window.allLocations = data.map((item) => {
+      let arrUrls = ["https://placehold.co/600x400/ccc/white?text=No+Image"];
+      if (item.image_urls && item.image_urls.length > 0)
+        arrUrls = item.image_urls;
+      else if (item.image_url) arrUrls = [item.image_url];
+      return {
+        id: item.id,
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [item.lng, item.lat] },
+        properties: {
+          id: item.id,
+          name: item.name,
+          category: item.categories?.name || "Khác",
+          description: item.description,
+          imageUrls: JSON.stringify(arrUrls),
+        },
+      };
+    });
+    currentFilteredLocations = [...window.allLocations];
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// ==========================================
+// 2. GPS & DẪN ĐƯỜNG OSRM (MIỄN PHÍ)
+// ==========================================
+function initGeolocation() {
+  if ("geolocation" in navigator) {
+    navigator.geolocation.watchPosition(
+      (pos) => {
+        userLocation = [pos.coords.longitude, pos.coords.latitude];
+        if (!userMarker && map) {
+          const el = document.createElement("div");
+          el.style.backgroundColor = "#2563eb";
+          el.style.width = "16px";
+          el.style.height = "16px";
+          el.style.borderRadius = "50%";
+          el.style.border = "3px solid white";
+          el.style.boxShadow = "0 0 8px rgba(0,0,0,0.4)";
+          userMarker = new maplibregl.Marker({ element: el })
+            .setLngLat(userLocation)
+            .setPopup(
+              new maplibregl.Popup({ offset: 15 }).setText("Vị trí của bạn"),
+            )
+            .addTo(map);
+        } else if (userMarker) {
+          userMarker.setLngLat(userLocation);
+        }
+      },
+      (err) => console.log("Lỗi GPS:", err.message),
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 },
+    );
+  }
+}
+
+async function drawRoute(startCoords, endCoords, mode = "driving") {
+  const osrmProfile = mode === "walking" ? "foot" : "driving";
+  const url = `https://router.project-osrm.org/route/v1/${osrmProfile}/${startCoords[0]},${startCoords[1]};${endCoords[0]},${endCoords[1]}?geometries=geojson&overview=full`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.routes && data.routes.length > 0) {
+      const route = data.routes[0].geometry;
+      if (map.getSource("route-src")) map.getSource("route-src").setData(route);
+      const bounds = route.coordinates.reduce(
+        (b, coord) => b.extend(coord),
+        new maplibregl.LngLatBounds(route.coordinates[0], route.coordinates[0]),
+      );
+      map.fitBounds(bounds, { padding: 60 });
+    }
+  } catch (err) {
+    if (window.Toast) window.Toast.show("Lỗi chỉ đường.", "error");
+  }
+}
+
+// ==========================================
+// 3. ĐIỀU KHIỂN MENU, BỘ LỌC
+// ==========================================
+document
+  .getElementById("mobile-filter-toggle")
+  ?.addEventListener("click", () => {
+    document.getElementById("filter-menu").classList.toggle("show");
+  });
+
 document.querySelectorAll(".filter-btn").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     document
       .querySelectorAll(".filter-btn")
       .forEach((b) => b.classList.remove("active"));
-    e.target.classList.add("active");
-    const cat = e.target.getAttribute("data-filter");
-
-    if (cat === "all") {
-      currentFilteredLocations = [...window.allLocations];
-    } else if (cat === "near-me") {
-      if (!userLocation) {
-        if (window.Toast)
-          window.Toast.show(
-            "Đang chờ lấy vị trí GPS hoặc bạn chưa cấp quyền.",
-            "info",
+    e.currentTarget.classList.add("active");
+    const cat = e.currentTarget.getAttribute("data-filter");
+    if (cat === "all") currentFilteredLocations = [...window.allLocations];
+    else if (cat === "near-me") {
+      if (!userLocation) return window.Toast?.show("Đang chờ GPS.", "info");
+      currentFilteredLocations = window.allLocations
+        .filter((l) => {
+          l.tempDist = getDistanceFromLatLonInKm(
+            userLocation[1],
+            userLocation[0],
+            l.geometry.coordinates[1],
+            l.geometry.coordinates[0],
           );
-        return;
-      }
-      const MAX_DISTANCE_KM = 5;
-      const nearbyLocs = window.allLocations.filter((loc) => {
-        const dist = getDistanceFromLatLonInKm(
-          userLocation[1],
-          userLocation[0],
-          loc.geometry.coordinates[1],
-          loc.geometry.coordinates[0],
-        );
-        loc.tempDistance = dist;
-        return dist <= MAX_DISTANCE_KM;
-      });
-      nearbyLocs.sort((a, b) => a.tempDistance - b.tempDistance);
-      currentFilteredLocations = nearbyLocs;
-
-      if (nearbyLocs.length === 0 && window.Toast) {
-        window.Toast.show(
-          "Không tìm thấy địa điểm nào quanh bạn trong bán kính 5km.",
-          "info",
-        );
-      }
-    } else {
+          return l.tempDist <= 5;
+        })
+        .sort((a, b) => a.tempDist - b.tempDist);
+    } else
       currentFilteredLocations = window.allLocations.filter(
         (loc) => loc.properties.category === cat,
       );
-    }
     updateMapSourceData();
+    document.getElementById("filter-menu").classList.remove("show");
   });
 });
 
-if (
-  document.getElementById("btn-street") &&
-  document.getElementById("btn-satellite")
-) {
-  document.getElementById("btn-street").addEventListener("click", (e) => {
-    if (currentMapStyle === "streets-v12") return;
-    currentMapStyle = "streets-v12";
-    map.setStyle(`mapbox://styles/mapbox/${currentMapStyle}`);
-    e.target.classList.add("active");
-    document.getElementById("btn-satellite").classList.remove("active");
+document.getElementById("btn-street")?.addEventListener("click", (e) => {
+  if (currentMapStyle === "streets") return;
+  currentMapStyle = "streets";
+  map.setStyle("https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json");
+  e.currentTarget.classList.add("active");
+  document.getElementById("btn-satellite").classList.remove("active");
+  setTimeout(() => addMapLayers(), 800);
+});
+
+document.getElementById("btn-satellite")?.addEventListener("click", (e) => {
+  if (currentMapStyle === "satellite") return;
+  currentMapStyle = "satellite";
+  map.setStyle({
+    version: 8,
+    sources: {
+      "esri-satellite": {
+        type: "raster",
+        tiles: [
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        ],
+        tileSize: 256,
+      },
+    },
+    layers: [
+      {
+        id: "satellite",
+        type: "raster",
+        source: "esri-satellite",
+        minzoom: 0,
+        maxzoom: 22,
+      },
+    ],
   });
-  document.getElementById("btn-satellite").addEventListener("click", (e) => {
-    if (currentMapStyle === "satellite-streets-v12") return;
-    currentMapStyle = "satellite-streets-v12";
-    map.setStyle(`mapbox://styles/mapbox/${currentMapStyle}`);
-    e.target.classList.add("active");
-    document.getElementById("btn-street").classList.remove("active");
-  });
-}
+  e.currentTarget.classList.add("active");
+  document.getElementById("btn-street").classList.remove("active");
+  setTimeout(() => addMapLayers(), 800);
+});
 
 // ==========================================
-// 6. TÌM KIẾM THÔNG MINH (FUZZY SEARCH & VOICE)
+// 4. SIDEBAR CHI TIẾT ĐỊA ĐIỂM
+// ==========================================
+const sidebar = document.getElementById("info-sidebar");
+let touchStartY = 0;
+sidebar?.addEventListener(
+  "touchstart",
+  (e) => (touchStartY = e.changedTouches[0].screenY),
+  { passive: true },
+);
+sidebar?.addEventListener(
+  "touchend",
+  (e) => {
+    if (e.changedTouches[0].screenY - touchStartY > 100) closeSidebar();
+  },
+  { passive: true },
+);
+document
+  .getElementById("close-sidebar")
+  ?.addEventListener("click", closeSidebar);
+
+function closeSidebar() {
+  sidebar.classList.remove("open");
+  if (synth.speaking) synth.cancel();
+  updateAudioBtnUI(false);
+  resetReviewForm(); // Gọi hàm xóa form khi đóng sidebar
+}
+
+function openLocationSidebar(feature) {
+  activeLocationId = feature.id || feature.properties.id;
+  loadLocationReviews(activeLocationId);
+  loadLocationPrices(activeLocationId);
+
+  document.getElementById("sb-title").textContent = feature.properties.name;
+  document.getElementById("sb-category").textContent =
+    feature.properties.category;
+  document.getElementById("sb-desc").textContent =
+    feature.properties.description;
+
+  const distanceTag = document.getElementById("sb-distance");
+  if (userLocation) {
+    const dist = getDistanceFromLatLonInKm(
+      userLocation[1],
+      userLocation[0],
+      feature.geometry.coordinates[1],
+      feature.geometry.coordinates[0],
+    );
+    distanceTag.style.display = "inline-block";
+    distanceTag.innerHTML = `<i class="fa-solid fa-location-arrow"></i> Cách ${dist.toFixed(1)} km`;
+  } else distanceTag.style.display = "none";
+
+  // Carousel ẢNH
+  let images = ["https://placehold.co/600x400/ccc/white?text=No+Image"];
+  try {
+    if (feature.properties.imageUrls)
+      images = JSON.parse(feature.properties.imageUrls);
+  } catch (e) {}
+
+  const carouselContainer = document.getElementById("sb-carousel");
+  const prevBtn = document.getElementById("sb-carousel-prev");
+  const nextBtn = document.getElementById("sb-carousel-next");
+  const indContainer = document.getElementById("sb-carousel-indicators");
+  carouselContainer.innerHTML = "";
+  indContainer.innerHTML = "";
+
+  images.forEach((url, index) => {
+    const img = document.createElement("img");
+    img.src = url;
+    carouselContainer.appendChild(img);
+    const ind = document.createElement("div");
+    ind.className = `indicator ${index === 0 ? "active" : ""}`;
+    indContainer.appendChild(ind);
+  });
+
+  let currentSlide = 0;
+  if (images.length > 1) {
+    prevBtn.style.display = "flex";
+    nextBtn.style.display = "flex";
+    indContainer.style.display = "flex";
+  } else {
+    prevBtn.style.display = "none";
+    nextBtn.style.display = "none";
+    indContainer.style.display = "none";
+  }
+
+  const updateSlider = () => {
+    carouselContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+    Array.from(indContainer.children).forEach((dot, idx) =>
+      dot.classList.toggle("active", idx === currentSlide),
+    );
+  };
+  prevBtn.onclick = () => {
+    currentSlide = currentSlide > 0 ? currentSlide - 1 : images.length - 1;
+    updateSlider();
+  };
+  nextBtn.onclick = () => {
+    currentSlide = currentSlide < images.length - 1 ? currentSlide + 1 : 0;
+    updateSlider();
+  };
+  Array.from(indContainer.children).forEach(
+    (dot, idx) =>
+      (dot.onclick = () => {
+        currentSlide = idx;
+        updateSlider();
+      }),
+  );
+
+  updateBookmarkButtonUI();
+
+  // ACTION BUTTONS (Âm thanh, Dẫn đường, Check-in)
+  if (synth.speaking) synth.cancel();
+  updateAudioBtnUI(false);
+  document.getElementById("btn-audio").onclick = () => {
+    if (synth.speaking && !synth.paused) {
+      synth.pause();
+      updateAudioBtnUI(false);
+    } else if (synth.paused) {
+      synth.resume();
+      updateAudioBtnUI(true);
+    } else {
+      const textToRead = document.getElementById("sb-desc").textContent;
+      if (!textToRead) return;
+      currentUtterance = new SpeechSynthesisUtterance(textToRead);
+      currentUtterance.lang = "vi-VN";
+      currentUtterance.onend = () => updateAudioBtnUI(false);
+      currentUtterance.onerror = () => updateAudioBtnUI(false);
+      synth.speak(currentUtterance);
+      updateAudioBtnUI(true);
+    }
+  };
+
+  document.getElementById("btn-directions").onclick = () => {
+    if (userLocation) {
+      drawRoute(userLocation, feature.geometry.coordinates);
+      if (window.innerWidth <= 768) closeSidebar();
+    } else
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${feature.geometry.coordinates[1]},${feature.geometry.coordinates[0]}`,
+        "_blank",
+      );
+  };
+
+  const btnCheckin = document.getElementById("btn-checkin");
+  btnCheckin.onclick = async () => {
+    if (!currentAuthUser)
+      return window.Toast?.show("Cần đăng nhập để Check-in!", "info");
+    if (!userLocation)
+      return window.Toast?.show("Đang dò tọa độ GPS...", "info");
+    btnCheckin.disabled = true;
+    btnCheckin.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+    try {
+      const { data, error } = await supabaseClient.rpc("perform_check_in", {
+        p_location_id: activeLocationId,
+        p_lat: userLocation[1],
+        p_lng: userLocation[0],
+      });
+      if (error) throw error;
+      if (data.success) {
+        window.AlertModal
+          ? window.AlertModal.show("Thành Công!", data.message, "success")
+          : window.Toast?.show(data.message, "success");
+      } else {
+        window.AlertModal
+          ? window.AlertModal.show("Chưa đạt yêu cầu", data.message, "error")
+          : window.Toast?.show(data.message, "error");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      btnCheckin.disabled = false;
+      btnCheckin.innerHTML = `<i class="fa-solid fa-map-pin"></i> Check-in`;
+    }
+  };
+
+  sidebar.classList.add("open");
+}
+
+function updateBookmarkButtonUI() {
+  const btn = document.getElementById("btn-bookmark");
+  if (!btn) return;
+  if (userBookmarkedIds.includes(activeLocationId)) {
+    btn.classList.add("active");
+    btn.innerHTML = `<i class="fa-solid fa-bookmark"></i> Đã lưu`;
+  } else {
+    btn.classList.remove("active");
+    btn.innerHTML = `<i class="fa-regular fa-bookmark"></i> Lưu`;
+  }
+}
+
+document.getElementById("btn-bookmark")?.addEventListener("click", async () => {
+  if (!currentAuthUser) return window.Toast?.show("Cần đăng nhập!", "info");
+  const btn = document.getElementById("btn-bookmark");
+  const isBookmarked = userBookmarkedIds.includes(activeLocationId);
+  btn.disabled = true;
+  if (isBookmarked) {
+    const { error } = await supabaseClient
+      .from("user_bookmarks")
+      .delete()
+      .eq("user_id", currentAuthUser.id)
+      .eq("location_id", activeLocationId);
+    if (!error)
+      userBookmarkedIds = userBookmarkedIds.filter(
+        (id) => id !== activeLocationId,
+      );
+  } else {
+    const { error } = await supabaseClient
+      .from("user_bookmarks")
+      .insert([{ user_id: currentAuthUser.id, location_id: activeLocationId }]);
+    if (!error) userBookmarkedIds.push(activeLocationId);
+  }
+  btn.disabled = false;
+  updateBookmarkButtonUI();
+});
+
+// ==========================================
+// 5. TÌM KIẾM THÔNG MINH & GIỌNG NÓI
 // ==========================================
 const searchInput = document.getElementById("search-input");
 const searchResults = document.getElementById("search-results");
 const voiceBtn = document.getElementById("voice-search-btn");
 
 function removeVietnameseTones(str) {
-  str = str.toLowerCase();
-  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
-  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
-  str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
-  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
-  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-  str = str.replace(/đ/g, "d");
-  str = str.replace(/\u0300|\u0301|\u0303|\u0309|\u0323/g, "");
-  str = str.replace(/\u02C6|\u0306|\u031B/g, "");
-  return str.trim();
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
-
 function getLevenshteinDistance(a, b) {
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1,
-        );
-      }
-    }
-  }
-  return matrix[b.length][a.length];
+  const m = [];
+  for (let i = 0; i <= b.length; i++) m[i] = [i];
+  for (let j = 0; j <= a.length; j++) m[0][j] = j;
+  for (let i = 1; i <= b.length; i++)
+    for (let j = 1; j <= a.length; j++)
+      m[i][j] =
+        b.charAt(i - 1) === a.charAt(j - 1)
+          ? m[i - 1][j - 1]
+          : Math.min(m[i - 1][j - 1] + 1, m[i][j - 1] + 1, m[i - 1][j] + 1);
+  return m[b.length][a.length];
 }
-
 function getFuzzyDistance(searchKey, target) {
   if (searchKey.length >= target.length)
     return getLevenshteinDistance(searchKey, target);
-  let minDistance = Infinity;
+  let min = Infinity;
   for (let i = 0; i <= target.length - searchKey.length; i++) {
-    const sub = target.substring(i, i + searchKey.length);
-    const dist = getLevenshteinDistance(searchKey, sub);
-    if (dist < minDistance) minDistance = dist;
+    const dist = getLevenshteinDistance(
+      searchKey,
+      target.substring(i, i + searchKey.length),
+    );
+    if (dist < min) min = dist;
   }
-  return minDistance;
-}
-
-function renderSearchList(locations, isSuggestion = false) {
-  searchResults.innerHTML = "";
-  searchResults.style.display = "block";
-
-  if (isSuggestion) {
-    const header = document.createElement("li");
-    header.innerHTML = `<span style="font-size:12px; color:#ef4444; font-style:italic;">Có phải bạn muốn tìm:</span>`;
-    header.style.pointerEvents = "none";
-    header.style.background = "#fef2f2";
-    searchResults.appendChild(header);
-  }
-
-  locations.forEach((loc) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<i class="fa-solid fa-location-dot" style="${isSuggestion ? "color:#ef4444;" : ""}"></i> 
-                    <div>
-                      <span style="font-weight:600; display:block;">${loc.properties.name}</span>
-                      <span style="font-size: 11px; color: #64748b;">${loc.properties.category}</span>
-                    </div>`;
-    li.addEventListener("click", () => {
-      map.flyTo({ center: loc.geometry.coordinates, zoom: 15.5 });
-      openLocationSidebar(loc);
-      searchResults.style.display = "none";
-      searchInput.value = loc.properties.name;
-    });
-    searchResults.appendChild(li);
-  });
+  return min;
 }
 
 function handleSearchInput(val) {
@@ -998,126 +722,102 @@ function handleSearchInput(val) {
     searchResults.style.display = "none";
     return;
   }
-
   const searchKey = removeVietnameseTones(val);
+  const exact = window.allLocations.filter(
+    (l) =>
+      removeVietnameseTones(l.properties.name).includes(searchKey) ||
+      removeVietnameseTones(l.properties.category).includes(searchKey),
+  );
+  const matches =
+    exact.length > 0
+      ? exact
+      : searchKey.length > 3
+        ? window.allLocations
+            .map((l) => ({
+              ...l,
+              fuzzyScore: getFuzzyDistance(
+                searchKey,
+                removeVietnameseTones(l.properties.name),
+              ),
+            }))
+            .filter((l) => l.fuzzyScore <= 2)
+            .sort((a, b) => a.fuzzyScore - b.fuzzyScore)
+            .slice(0, 3)
+        : [];
 
-  const exactMatches = window.allLocations.filter((loc) => {
-    const locName = removeVietnameseTones(loc.properties.name);
-    const locCategory = removeVietnameseTones(loc.properties.category);
-    return locName.includes(searchKey) || locCategory.includes(searchKey);
-  });
+  if (matches.length > 0) {
+    searchResults.innerHTML =
+      exact.length === 0
+        ? `<li style="font-size:12px; color:#ef4444; background:#fef2f2; pointer-events:none;">Có phải bạn muốn tìm:</li>`
+        : "";
+    searchResults.style.display = "block";
+    matches.forEach((loc) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<i class="fa-solid fa-location-dot" style="color:#64748b;"></i> <div><span style="font-weight:600; display:block;">${loc.properties.name}</span><span style="font-size: 11px; color:#64748b;">${loc.properties.category}</span></div>`;
+      li.onclick = () => {
+        map.flyTo({ center: loc.geometry.coordinates, zoom: 15.5 });
+        openLocationSidebar(loc);
+        searchResults.style.display = "none";
+        searchInput.value = loc.properties.name;
+      };
+      searchResults.appendChild(li);
+    });
+  } else searchResults.style.display = "none";
+}
 
-  if (exactMatches.length > 0) {
-    renderSearchList(exactMatches, false);
-    return;
-  }
-
-  if (searchKey.length > 3) {
-    const fuzzyMatches = window.allLocations
-      .map((loc) => {
-        const locName = removeVietnameseTones(loc.properties.name);
-        const distance = getFuzzyDistance(searchKey, locName);
-        return { ...loc, fuzzyScore: distance };
-      })
-      .filter((loc) => loc.fuzzyScore <= 2)
-      .sort((a, b) => a.fuzzyScore - b.fuzzyScore)
-      .slice(0, 3);
-
-    if (fuzzyMatches.length > 0) {
-      renderSearchList(fuzzyMatches, true);
-    } else {
-      searchResults.style.display = "none";
-    }
-  } else {
+searchInput?.addEventListener("input", (e) =>
+  handleSearchInput(e.target.value),
+);
+document.addEventListener("click", (e) => {
+  if (!e.target.closest("#search-container"))
     searchResults.style.display = "none";
-  }
-}
-
-if (searchInput && searchResults) {
-  searchInput.addEventListener("input", (e) => {
-    handleSearchInput(e.target.value);
-  });
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest("#search-container"))
-      searchResults.style.display = "none";
-  });
-}
+});
 
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
-
 if (SpeechRecognition && voiceBtn) {
   const recognition = new SpeechRecognition();
   recognition.lang = "vi-VN";
   recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
-
   let isListening = false;
-
-  // Hàm gom chung logic đưa UI về trạng thái mặc định
-  function resetVoiceUI() {
+  const resetVoiceUI = () => {
     isListening = false;
     voiceBtn.classList.remove("listening");
-    searchInput.placeholder = "Tìm địa điểm";
-  }
-
-  voiceBtn.addEventListener("click", () => {
+    searchInput.placeholder = "Tìm địa điểm...";
+  };
+  voiceBtn.onclick = () => {
     if (isListening) {
-      // Dùng abort() để ép dừng mic ngay lập tức, không chờ phân tích kết quả
       recognition.abort();
       resetVoiceUI();
-    } else {
-      try {
-        recognition.start();
-      } catch (err) {
-        // Tránh lỗi khi API chưa kịp dọn dẹp phiên trước
-        console.warn("Lỗi khởi động Micro:", err);
-      }
-    }
-  });
-
-  recognition.onstart = function () {
+    } else recognition.start();
+  };
+  recognition.onstart = () => {
     isListening = true;
     voiceBtn.classList.add("listening");
-    searchInput.placeholder = "Đang nghe... (Bấm để dừng)";
+    searchInput.placeholder = "Đang nghe...";
     searchInput.value = "";
   };
-
-  // Dùng onend thay cho onspeechend: Bắt mọi trường hợp mic bị ngắt
-  recognition.onend = function () {
+  recognition.onend = resetVoiceUI;
+  recognition.onresult = (e) => {
+    searchInput.value = e.results[0][0].transcript;
+    handleSearchInput(searchInput.value);
     resetVoiceUI();
   };
-
-  recognition.onresult = function (event) {
-    const transcript = event.results[0][0].transcript;
-    searchInput.value = transcript;
-    handleSearchInput(transcript);
+  recognition.onerror = (e) => {
     resetVoiceUI();
+    if (e.error !== "aborted" && window.Toast)
+      window.Toast.show(
+        e.error === "not-allowed" ? "Cấp quyền Micro!" : "Không nghe rõ.",
+        "error",
+      );
   };
-
-  recognition.onerror = function (event) {
-    resetVoiceUI();
-
-    // Bỏ qua lỗi aborted vì đây là hành động chủ động bấm dừng
-    if (event.error === "aborted") return;
-
-    if (window.Toast) {
-      if (event.error === "not-allowed") {
-        window.Toast.show(
-          "Vui lòng cấp quyền sử dụng Micro trên trình duyệt!",
-          "error",
-        );
-      } else if (event.error === "no-speech") {
-        window.Toast.show("Không nghe rõ, vui lòng thử lại.", "info");
-      }
-    }
-  };
-} else if (voiceBtn) {
-  voiceBtn.style.display = "none";
 }
+
 // ==========================================
-// 7. XÁC THỰC VÀ ĐÁNH GIÁ (GLOBAL AUTH)
+// 6. GIÁ, ĐÁNH GIÁ, USER VÀ QUẢN TRỊ
 // ==========================================
+
+// --- 6.1. XÁC THỰC NGƯỜI DÙNG & RENDER NAVBAR ĐÁY ---
 async function checkGlobalAuth() {
   if (!supabaseClient) return;
   try {
@@ -1128,22 +828,24 @@ async function checkGlobalAuth() {
 
     if (session && authSection) {
       currentAuthUser = session.user;
+
+      // Tự động điền tên cho phần đánh giá
       const nameInput = document.getElementById("reviewer-name");
       if (nameInput) {
         nameInput.value =
           currentAuthUser.user_metadata?.full_name ||
           currentAuthUser.email.split("@")[0];
         nameInput.readOnly = true;
-        nameInput.style.backgroundColor = "#e2e8f0";
       }
 
+      // Lấy danh sách địa điểm đã lưu
       const { data } = await supabaseClient
         .from("user_bookmarks")
         .select("location_id")
         .eq("user_id", currentAuthUser.id);
       if (data) userBookmarkedIds = data.map((d) => d.location_id);
 
-      // KIỂM TRA QUYỀN CỦA USER ĐỂ ẨN/HIỆN NÚT QUẢN TRỊ
+      // Lấy quyền User (Role)
       const { data: profileData } = await supabaseClient
         .from("profiles")
         .select("role")
@@ -1151,366 +853,476 @@ async function checkGlobalAuth() {
         .single();
       const userRole = profileData?.role || "user";
 
-      // Chỉ tạo HTML nút Quản trị nếu là Admin hoặc Manager
-      let adminButtonHtml = "";
+      // Kiến tạo lại toàn bộ thanh điều khiển
+      let adminHtml = "";
       if (userRole === "admin" || userRole === "manager") {
-        adminButtonHtml = `
-          <div class="separator"></div>
-          <a href="dashboard.html" style="color: #10b981; font-weight: 600; text-decoration: none;" class="action-txt">
+        adminHtml = `
+          <span class="separator"></span>
+          <a href="dashboard.html" id="btn-admin" style="color: #10b981; display: flex; align-items: center; gap: 8px; font-weight: 600; text-decoration: none;">
             <i class="fa-solid fa-chart-pie"></i> Quản trị
           </a>
         `;
       }
 
       authSection.innerHTML = `
-        <a href="#" id="btn-leaderboard-in" class="action-txt" style="color: #f59e0b; font-weight: 700; text-decoration: none;">
-          <i class="fa-solid fa-trophy"></i> Xếp hạng
+        <a id="btn-open-itinerary" style="color: #0052cc; display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer;">
+          <i class="fa-solid fa-map"></i> Lộ trình
         </a>
-        <div class="separator"></div>
-        <span id="btn-show-bookmarks" class="action-txt"><i class="fa-solid fa-heart"></i> Đã lưu</span>
-        ${adminButtonHtml}
-        <div class="separator"></div>
-        <a href="profile.html" style="color: #0052cc; font-weight: 600; text-decoration: none;" class="action-txt">
+        <span class="separator"></span>
+        <a id="btn-leaderboard-in" style="color: #f59e0b; display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer;">
+          <i class="fa-solid fa-trophy"></i> Hạng
+        </a>
+        <span class="separator"></span>
+        <a id="btn-show-bookmarks" style="color: #ef4444; display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer;">
+          <i class="fa-solid fa-heart"></i> Đã lưu
+        </a>
+        ${adminHtml}
+        <span class="separator"></span>
+        <a href="profile.html" id="btn-profile" style="color: #8b5cf6; display: flex; align-items: center; gap: 8px; font-weight: 600; text-decoration: none;">
           <i class="fa-solid fa-user"></i> Hồ sơ
         </a>
       `;
 
+      // Gắn lại sự kiện cho các nút vừa tạo
+      document
+        .getElementById("btn-open-itinerary")
+        ?.addEventListener("click", () => {
+          document.getElementById("itinerary-modal").classList.add("active");
+        });
+
+      document
+        .getElementById("btn-leaderboard-in")
+        ?.addEventListener("click", async () => {
+          document.getElementById("leaderboard-modal").classList.add("active");
+          const listEl = document.getElementById("leaderboard-list");
+          listEl.innerHTML =
+            '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+          const { data } = await supabaseClient
+            .from("check_ins")
+            .select("user_name");
+          if (data) {
+            const counts = {};
+            data.forEach(
+              (i) =>
+                (counts[i.user_name || "Ẩn danh"] =
+                  (counts[i.user_name || "Ẩn danh"] || 0) + 1),
+            );
+            const sorted = Object.keys(counts)
+              .map((name) => ({ name, score: counts[name] }))
+              .sort((a, b) => b.score - a.score);
+            listEl.innerHTML = sorted
+              .map(
+                (u, i) =>
+                  `<li class="lb-item"><div class="lb-rank ${i < 3 ? "lb-rank-" + (i + 1) : ""}">${i < 3 ? '<i class="fa-solid fa-medal"></i>' : i + 1}</div><div class="lb-info"><p class="lb-name">${u.name}</p></div><div class="lb-score">${u.score} Điểm</div></li>`,
+              )
+              .join("");
+          }
+        });
+
       document
         .getElementById("btn-show-bookmarks")
-        .addEventListener("click", () => {
-          renderBookmarksModal();
+        ?.addEventListener("click", () => {
           document.getElementById("bookmarks-modal").classList.add("active");
+          const listEl = document.getElementById("bookmarks-list");
+          const bLocs = window.allLocations.filter((l) =>
+            userBookmarkedIds.includes(l.id),
+          );
+          if (bLocs.length === 0)
+            return (listEl.innerHTML =
+              "<div style='text-align:center; padding:15px; color:#64748b;'>Trống.</div>");
+          listEl.innerHTML = "";
+          bLocs.forEach((loc) => {
+            const li = document.createElement("li");
+            li.innerHTML = `<div class="bm-info"><h4 class="bm-name">${loc.properties.name}</h4><p class="bm-category">${loc.properties.category}</p></div><button class="remove-bm"><i class="fa-solid fa-trash"></i></button>`;
+            li.querySelector(".bm-info").onclick = () => {
+              document
+                .getElementById("bookmarks-modal")
+                .classList.remove("active");
+              map.flyTo({ center: loc.geometry.coordinates, zoom: 15.5 });
+              openLocationSidebar(loc);
+            };
+            li.querySelector(".remove-bm").onclick = async (e) => {
+              e.stopPropagation();
+              li.style.opacity = "0.5";
+              const { error } = await supabaseClient
+                .from("user_bookmarks")
+                .delete()
+                .eq("user_id", currentAuthUser.id)
+                .eq("location_id", loc.id);
+              if (!error) {
+                userBookmarkedIds = userBookmarkedIds.filter(
+                  (id) => id !== loc.id,
+                );
+                li.remove();
+                if (activeLocationId === loc.id) updateBookmarkButtonUI();
+              }
+            };
+            listEl.appendChild(li);
+          });
         });
     }
   } catch (error) {
     console.error("Lỗi đăng nhập:", error);
   }
 }
-checkGlobalAuth();
 
-async function loadLocationReviews(locId) {
-  const reviewsList = document.getElementById("reviews-list");
-  const reviewCount = document.getElementById("review-count");
-  reviewsList.innerHTML =
+// --- 6.2. HIỂN THỊ BẢNG GIÁ DỊCH VỤ ---
+async function loadLocationPrices(locId) {
+  const container = document.getElementById("sb-prices");
+  if (!container) return;
+  container.innerHTML =
     '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i></div>';
-  reviewCount.textContent = "0";
-  if (!supabaseClient) return;
-
   try {
     const { data, error } = await supabaseClient
+      .from("price_items")
+      .select("*")
+      .eq("location_id", locId)
+      .order("updated_at", { ascending: false });
+    if (error) throw error;
+    if (!data || data.length === 0)
+      return (container.innerHTML =
+        '<div class="price-container"><div class="price-header"><i class="fa-solid fa-tag"></i> Bảng giá</div><p style="font-size: 13px; color: #64748b;">Chưa có dữ liệu giá từ ban quản lý.</p></div>');
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "price-container";
+    wrapper.innerHTML =
+      '<div class="price-header"><i class="fa-solid fa-tag"></i> Bảng giá tham khảo</div>';
+
+    data.forEach((item) => {
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "price-item";
+      const isOld =
+        Math.floor((new Date() - new Date(item.updated_at)) / 86400000) > 90;
+      const fmt = (v) => new Intl.NumberFormat("vi-VN").format(v);
+      const priceText =
+        item.price_min === item.price_max
+          ? fmt(item.price_min)
+          : `${fmt(item.price_min)} - ${fmt(item.price_max)}`;
+      itemDiv.innerHTML = `<span class="price-name" style="${isOld ? "text-decoration:line-through;color:#94a3b8;" : ""}">${item.item_name}</span><span class="price-value">${priceText} <span class="price-unit">${item.unit}</span></span>`;
+      wrapper.appendChild(itemDiv);
+    });
+    container.innerHTML = "";
+    container.appendChild(wrapper);
+  } catch (err) {
+    container.innerHTML = "";
+  }
+}
+
+// --- 6.3. TẢI VÀ HIỂN THỊ ĐÁNH GIÁ (CÓ LƯỚI ẢNH) ---
+async function loadLocationReviews(locId) {
+  const listEl = document.getElementById("reviews-list");
+  const countEl = document.getElementById("review-count");
+  if (!listEl) return;
+  listEl.innerHTML =
+    '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+  try {
+    const { data } = await supabaseClient
       .from("reviews")
       .select("*")
       .eq("location_id", locId)
       .order("created_at", { ascending: false });
+    countEl.textContent = data.length;
+    if (data.length === 0)
+      return (listEl.innerHTML =
+        "<p style='color:#64748b; font-size:14px;'>Chưa có đánh giá.</p>");
 
-    if (error) throw error;
+    listEl.innerHTML = data
+      .map((r) => {
+        let imagesHtml = "";
+        if (r.image_url) {
+          try {
+            const urls = JSON.parse(r.image_url);
+            if (Array.isArray(urls)) {
+              imagesHtml =
+                `<div class="review-images-grid">` +
+                urls
+                  .map(
+                    (u) =>
+                      `<img src="${u}" class="review-image-display" style="margin-top:0; cursor:pointer;" onclick="window.open('${u}', '_blank')"/>`,
+                  )
+                  .join("") +
+                `</div>`;
+            } else {
+              imagesHtml = `<img src="${r.image_url}" class="review-image-display" style="cursor:pointer;" onclick="window.open('${r.image_url}', '_blank')"/>`;
+            }
+          } catch (e) {
+            imagesHtml = `<img src="${r.image_url}" class="review-image-display" style="cursor:pointer;" onclick="window.open('${r.image_url}', '_blank')"/>`;
+          }
+        }
 
-    reviewCount.textContent = data.length;
-    if (data.length === 0) {
-      reviewsList.innerHTML = "<p>Chưa có đánh giá.</p>";
-      return;
-    }
-
-    reviewsList.innerHTML = data
-      .map(
-        (r) =>
-          `<div class="review-item">
-            <div class="review-header">
-              <span class="reviewer-name">${r.guest_name}</span>
-              <span class="review-stars">${"⭐".repeat(r.rating)}</span>
-            </div>
-            <p class="review-comment">${r.comment}</p>
-            ${r.image_url ? `<img src="${r.image_url}" class="review-image-display" />` : ""}
-          </div>`,
-      )
+        return `<div class="review-item">
+        <div class="review-header">
+          <span class="reviewer-name">${r.guest_name.replace(/</g, "&lt;")}</span>
+          <span class="review-stars">${"⭐".repeat(r.rating)}</span>
+        </div>
+        <p class="review-comment">${r.comment}</p>
+        ${imagesHtml}
+      </div>`;
+      })
       .join("");
-  } catch (err) {
-    reviewsList.innerHTML = "<p>Chưa thể tải đánh giá lúc này (Offline).</p>";
+  } catch (e) {
+    listEl.innerHTML = "Lỗi tải đánh giá.";
   }
 }
 
-const reviewImageInput = document.getElementById("review-image");
-const reviewImgPreview = document.getElementById("review-img-preview");
-if (reviewImageInput && reviewImgPreview) {
-  reviewImageInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        reviewImgPreview.src = e.target.result;
-        reviewImgPreview.style.display = "block";
+// --- 6.4. LOGIC ĐĂNG ĐÁNH GIÁ (HỖ TRỢ NHIỀU ẢNH) ---
+let selectedReviewFiles = []; // Mảng chứa ảnh tạm
+
+// Reset nội dung form đánh giá
+function resetReviewForm() {
+  const reviewText = document.getElementById("review-text");
+  const reviewRating = document.getElementById("review-rating");
+  const fileNameSpan = document.getElementById("review-file-name");
+
+  if (reviewText) reviewText.value = "";
+  if (reviewRating) reviewRating.value = "5";
+  selectedReviewFiles = [];
+  renderReviewImagePreviews();
+
+  if (fileNameSpan) fileNameSpan.textContent = "Đính kèm ảnh (Tùy chọn)";
+}
+
+// Render ảnh preview để xóa bớt nếu cần
+function renderReviewImagePreviews() {
+  const container = document.getElementById("review-image-preview-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  selectedReviewFiles.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const wrap = document.createElement("div");
+      wrap.className = "review-img-wrap";
+      wrap.innerHTML = `
+              <img src="${e.target.result}" />
+              <button type="button" class="remove-review-img-btn" data-index="${index}">
+                  <i class="fa-solid fa-xmark"></i>
+              </button>
+          `;
+      container.appendChild(wrap);
+
+      wrap.querySelector(".remove-review-img-btn").onclick = function () {
+        const idx = parseInt(this.getAttribute("data-index"));
+        selectedReviewFiles.splice(idx, 1);
+        renderReviewImagePreviews();
+
+        const fileNameSpan = document.getElementById("review-file-name");
+        if (selectedReviewFiles.length > 0) {
+          fileNameSpan.textContent = `Đã chọn ${selectedReviewFiles.length} ảnh`;
+        } else {
+          fileNameSpan.textContent = "Đính kèm ảnh (Tùy chọn)";
+        }
       };
-      reader.readAsDataURL(file);
-    } else {
-      reviewImgPreview.style.display = "none";
-      reviewImgPreview.src = "";
-    }
+    };
+    reader.readAsDataURL(file);
   });
 }
 
+// Bắt sự kiện chọn ảnh
+const reviewImgInput = document.getElementById("review-image");
+reviewImgInput?.addEventListener("change", (e) => {
+  const files = Array.from(e.target.files);
+  selectedReviewFiles = selectedReviewFiles.concat(files);
+
+  const fileNameSpan = document.getElementById("review-file-name");
+  if (selectedReviewFiles.length > 0) {
+    fileNameSpan.textContent = `Đã chọn ${selectedReviewFiles.length} ảnh`;
+  } else {
+    fileNameSpan.textContent = "Đính kèm ảnh (Tùy chọn)";
+  }
+
+  renderReviewImagePreviews();
+  e.target.value = ""; // Đặt lại để cho phép chọn lại ảnh cùng tên
+});
+
+// Gửi Đánh Giá lên Supabase
 document
   .getElementById("submit-review-btn")
   ?.addEventListener("click", async () => {
     if (!activeLocationId) return;
     const btn = document.getElementById("submit-review-btn");
     const name = document.getElementById("reviewer-name").value.trim();
-    const rating = parseInt(document.getElementById("review-rating").value);
     const comment = document.getElementById("review-text").value.trim();
-    const fileInput = document.getElementById("review-image");
 
-    let file = null;
-    if (fileInput && fileInput.files) {
-      file = fileInput.files[0];
-    }
-
-    if (!navigator.onLine) {
-      if (window.Toast)
-        return window.Toast.show(
-          "Bạn đang offline. Vui lòng kết nối mạng để gửi đánh giá!",
-          "error",
-        );
-    }
-    if (!name || !comment) {
-      if (window.Toast)
-        return window.Toast.show(
-          "Vui lòng nhập đầy đủ tên và bình luận!",
-          "info",
-        );
-    }
+    if (!navigator.onLine)
+      return window.Toast?.show("Mất kết nối mạng!", "error");
+    if (!name || !comment)
+      return window.Toast?.show("Vui lòng nhập tên và bình luận!", "info");
 
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xử lý...';
     btn.disabled = true;
 
-    let finalImageUrl = null;
+    let uploadedUrls = [];
 
-    if (file) {
-      const uploadStatus = document.getElementById("review-upload-status");
-      if (uploadStatus) uploadStatus.style.display = "block";
+    if (selectedReviewFiles.length > 0) {
+      document.getElementById("review-upload-status").style.display = "block";
+      const uploadPromises = selectedReviewFiles.map(async (file) => {
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const { error } = await supabaseClient.storage
+          .from("review-images")
+          .upload(fileName, file);
+        if (!error) {
+          return supabaseClient.storage
+            .from("review-images")
+            .getPublicUrl(fileName).data.publicUrl;
+        }
+        return null;
+      });
 
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-      const { error: uploadError } = await supabaseClient.storage
-        .from("review-images")
-        .upload(fileName, file);
-
-      if (uploadError) {
-        if (window.Toast)
-          window.Toast.show("Lỗi tải ảnh lên: " + uploadError.message, "error");
-        btn.textContent = "Gửi đánh giá";
-        btn.disabled = false;
-        if (uploadStatus) uploadStatus.style.display = "none";
-        return;
-      }
-
-      const { data: publicUrlData } = supabaseClient.storage
-        .from("review-images")
-        .getPublicUrl(fileName);
-
-      finalImageUrl = publicUrlData.publicUrl;
-      if (uploadStatus) uploadStatus.style.display = "none";
+      const results = await Promise.all(uploadPromises);
+      uploadedUrls = results.filter((url) => url !== null);
+      document.getElementById("review-upload-status").style.display = "none";
     }
 
-    const payload = {
-      location_id: activeLocationId,
-      guest_name: name,
-      rating: rating,
-      comment: comment,
-    };
+    const finalImageUrlStr =
+      uploadedUrls.length > 0 ? JSON.stringify(uploadedUrls) : null;
 
-    if (currentAuthUser) payload.user_id = currentAuthUser.id;
-    if (finalImageUrl) payload.image_url = finalImageUrl;
+    const { error } = await supabaseClient.from("reviews").insert([
+      {
+        location_id: activeLocationId,
+        guest_name: name,
+        rating: document.getElementById("review-rating").value,
+        comment: comment,
+        user_id: currentAuthUser?.id,
+        image_url: finalImageUrlStr,
+      },
+    ]);
 
-    const { error } = await supabaseClient.from("reviews").insert([payload]);
-
-    btn.textContent = "Gửi đánh giá";
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá';
     btn.disabled = false;
 
-    if (error) {
-      if (window.Toast) window.Toast.show("Lỗi: " + error.message, "error");
-    } else {
-      if (!currentAuthUser) document.getElementById("reviewer-name").value = "";
-      document.getElementById("review-text").value = "";
-      document.getElementById("review-rating").value = "5";
-
-      if (reviewImageInput) reviewImageInput.value = "";
-      if (reviewImgPreview) reviewImgPreview.style.display = "none";
-
+    if (!error) {
+      resetReviewForm();
       loadLocationReviews(activeLocationId);
+      window.Toast?.show("Cảm ơn đánh giá của bạn!", "success");
+    } else {
+      window.Toast?.show("Lỗi: " + error.message, "error");
     }
   });
-
 // ==========================================
-// 8. BẢNG XẾP HẠNG (LEADERBOARD) VÀ SỰ KIỆN CHUNG
+// 7. LỊCH TRÌNH (TSP), LEADERBOARD, BOOKMARK
 // ==========================================
-async function renderLeaderboard() {
-  const listEl = document.getElementById("leaderboard-list");
-  if (!listEl) return;
-  listEl.innerHTML =
-    '<div style="text-align:center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin fa-2x" style="color: #0052cc"></i></div>';
-  document.getElementById("leaderboard-modal").classList.add("active");
-
-  if (!supabaseClient) return;
-
-  const { data, error } = await supabaseClient
-    .from("check_ins")
-    .select("user_name");
-
-  if (error || !data) {
-    listEl.innerHTML =
-      '<p style="text-align:center; padding: 20px;">Không thể tải dữ liệu.</p>';
-    return;
-  }
-
-  const counts = {};
-  data.forEach((item) => {
-    const name = item.user_name || "Người dùng ẩn danh";
-    counts[name] = (counts[name] || 0) + 1;
-  });
-
-  const sortedLeaderboard = Object.keys(counts)
-    .map((name) => ({ name, score: counts[name] }))
-    .sort((a, b) => b.score - a.score);
-
-  if (sortedLeaderboard.length === 0) {
-    listEl.innerHTML =
-      '<p style="text-align:center; padding: 20px;">Chưa có ai check-in trên hệ thống.</p>';
-    return;
-  }
-
-  listEl.innerHTML = sortedLeaderboard
-    .map((user, index) => {
-      let rankClass = "";
-      let rankIcon = index + 1;
-
-      if (index === 0) {
-        rankClass = "lb-rank-1";
-        rankIcon = '<i class="fa-solid fa-medal"></i>';
-      } else if (index === 1) {
-        rankClass = "lb-rank-2";
-        rankIcon = '<i class="fa-solid fa-medal"></i>';
-      } else if (index === 2) {
-        rankClass = "lb-rank-3";
-        rankIcon = '<i class="fa-solid fa-medal"></i>';
-      }
-
-      return `
-      <li class="lb-item">
-        <div class="lb-rank ${rankClass}">${rankIcon}</div>
-        <div class="lb-info"><p class="lb-name">${user.name}</p></div>
-        <div class="lb-score">${user.score} Điểm</div>
-      </li>
-    `;
-    })
-    .join("");
-}
-
-document.getElementById("close-lb-modal")?.addEventListener("click", () => {
-  document.getElementById("leaderboard-modal").classList.remove("active");
-});
-
-// Sử dụng Event Delegation để bắt sự kiện click cho cả 2 nút Bảng xếp hạng (lúc đăng nhập và chưa đăng nhập)
-document.getElementById("auth-section")?.addEventListener("click", (e) => {
-  const btnLb =
-    e.target.closest("#btn-leaderboard-in") ||
-    e.target.closest("#btn-leaderboard-out");
-  if (btnLb) {
-    e.preventDefault();
-    renderLeaderboard();
-  }
-});
-
-// ==========================================
-// 9. THUẬT TOÁN LỊCH TRÌNH THÔNG MINH (TSP - V2)
-// ==========================================
-let itineraryMarkers = [];
-
-// Bật Modal & Cá nhân hóa câu chào
-document.getElementById("btn-open-itinerary")?.addEventListener("click", () => {
-  const greetingEl = document.getElementById("itinerary-greeting");
-  if (currentAuthUser && greetingEl) {
-    const name =
-      currentAuthUser.user_metadata?.full_name ||
-      currentAuthUser.email.split("@")[0];
-    greetingEl.innerHTML = `Chào ${name}, bạn muốn đi đâu?`;
-  }
-  document.getElementById("itinerary-modal").classList.add("active");
-});
-
+document
+  .getElementById("btn-open-itinerary")
+  ?.addEventListener("click", () =>
+    document.getElementById("itinerary-modal").classList.add("active"),
+  );
 document
   .getElementById("close-itinerary-modal")
-  ?.addEventListener("click", () => {
-    document.getElementById("itinerary-modal").classList.remove("active");
+  ?.addEventListener("click", () =>
+    document.getElementById("itinerary-modal").classList.remove("active"),
+  );
+document
+  .getElementById("btn-leaderboard-in")
+  ?.addEventListener("click", async () => {
+    document.getElementById("leaderboard-modal").classList.add("active");
+    const listEl = document.getElementById("leaderboard-list");
+    listEl.innerHTML =
+      '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+    const { data } = await supabaseClient.from("check_ins").select("user_name");
+    if (data) {
+      const counts = {};
+      data.forEach(
+        (i) =>
+          (counts[i.user_name || "Ẩn danh"] =
+            (counts[i.user_name || "Ẩn danh"] || 0) + 1),
+      );
+      const sorted = Object.keys(counts)
+        .map((name) => ({ name, score: counts[name] }))
+        .sort((a, b) => b.score - a.score);
+      listEl.innerHTML = sorted
+        .map(
+          (u, i) =>
+            `<li class="lb-item"><div class="lb-rank ${i < 3 ? "lb-rank-" + (i + 1) : ""}">${i < 3 ? '<i class="fa-solid fa-medal"></i>' : i + 1}</div><div class="lb-info"><p class="lb-name">${u.name}</p></div><div class="lb-score">${u.score} Điểm</div></li>`,
+        )
+        .join("");
+    }
   });
+document
+  .getElementById("close-lb-modal")
+  ?.addEventListener("click", () =>
+    document.getElementById("leaderboard-modal").classList.remove("active"),
+  );
+document.getElementById("btn-show-bookmarks")?.addEventListener("click", () => {
+  document.getElementById("bookmarks-modal").classList.add("active");
+  const listEl = document.getElementById("bookmarks-list");
+  const bLocs = window.allLocations.filter((l) =>
+    userBookmarkedIds.includes(l.id),
+  );
+  if (bLocs.length === 0)
+    return (listEl.innerHTML =
+      "<div style='text-align:center; padding:15px; color:#64748b;'>Trống.</div>");
+  listEl.innerHTML = "";
+  bLocs.forEach((loc) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<div class="bm-info"><h4 class="bm-name">${loc.properties.name}</h4><p class="bm-category">${loc.properties.category}</p></div><button class="remove-bm"><i class="fa-solid fa-trash"></i></button>`;
+    li.querySelector(".bm-info").onclick = () => {
+      document.getElementById("bookmarks-modal").classList.remove("active");
+      map.flyTo({ center: loc.geometry.coordinates, zoom: 15.5 });
+      openLocationSidebar(loc);
+    };
+    li.querySelector(".remove-bm").onclick = async (e) => {
+      e.stopPropagation();
+      li.style.opacity = "0.5";
+      const { error } = await supabaseClient
+        .from("user_bookmarks")
+        .delete()
+        .eq("user_id", currentAuthUser.id)
+        .eq("location_id", loc.id);
+      if (!error) {
+        userBookmarkedIds = userBookmarkedIds.filter((id) => id !== loc.id);
+        li.remove();
+        if (activeLocationId === loc.id) updateBookmarkButtonUI();
+      }
+    };
+    listEl.appendChild(li);
+  });
+});
+document
+  .getElementById("close-bm-modal")
+  ?.addEventListener("click", () =>
+    document.getElementById("bookmarks-modal").classList.remove("active"),
+  );
 
-// Chạy thuật toán
 document
   .getElementById("btn-generate-route")
   ?.addEventListener("click", async () => {
-    if (!userLocation) {
-      if (window.Toast)
-        window.Toast.show(
-          "Vui lòng bật định vị GPS để tạo lịch trình!",
-          "error",
-        );
-      return;
-    }
-
-    const btnGen = document.getElementById("btn-generate-route");
-
-    // Lấy các tham số cá nhân hóa
-    const timeBudget = parseInt(
-      document.querySelector('input[name="iti_time"]:checked').value,
-    );
-    const vehicle = document.querySelector(
-      'input[name="iti_vehicle"]:checked',
-    ).value; // driving hoặc walking
-    const companion = document.querySelector(
-      'input[name="iti_companion"]:checked',
-    ).value;
-
+    if (!userLocation)
+      return window.Toast?.show("Bật GPS để tạo lịch trình!", "error");
     const prefs = Array.from(
       document.querySelectorAll(".iti-pref:checked"),
     ).map((cb) => cb.value);
-
-    if (prefs.length === 0) {
-      if (window.Toast)
-        window.Toast.show("Vui lòng chọn ít nhất 1 sở thích!", "error");
-      return;
-    }
-
-    // Lọc dữ liệu
-    let candidates = window.allLocations.filter((loc) =>
+    const candidates = window.allLocations.filter((loc) =>
       prefs.includes(loc.properties.category),
     );
-    if (candidates.length === 0) {
-      if (window.Toast)
-        window.Toast.show("Không có địa điểm nào phù hợp.", "info");
-      return;
-    }
+    if (candidates.length === 0)
+      return window.Toast?.show(
+        "Vui lòng chọn ít nhất 1 sở thích có dữ liệu.",
+        "info",
+      );
 
-    btnGen.innerHTML =
-      '<i class="fa-solid fa-spinner fa-spin"></i> Đang tính toán...';
+    const btnGen = document.getElementById("btn-generate-route");
+    btnGen.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
     btnGen.disabled = true;
 
-    // Tính số lượng điểm dừng (Tối ưu hóa theo thời gian và đối tượng)
-    let maxStops = timeBudget === 2 ? 2 : timeBudget === 4 ? 4 : 6;
-    // CÁ NHÂN HÓA: Nếu đi cùng gia đình, giảm bớt 1 điểm đến để lịch trình thong thả hơn
-    if (companion === "family" && maxStops > 2) {
+    let maxStops =
+      document.querySelector('input[name="iti_time"]:checked').value === "2"
+        ? 2
+        : 4;
+    if (
+      document.querySelector('input[name="iti_companion"]:checked').value ===
+      "family"
+    )
       maxStops -= 1;
-    }
-    if (candidates.length < maxStops) maxStops = candidates.length;
 
-    // Thuật toán Greedy Nearest Neighbor
-    let routePoints = [];
-    let currentLoc = userLocation;
-    let unvisited = [...candidates];
-
+    let routePoints = [],
+      currentLoc = userLocation,
+      unvisited = [...candidates];
     for (let i = 0; i < maxStops; i++) {
       if (unvisited.length === 0) break;
-      let nearestIdx = -1;
-      let minDist = Infinity;
-
+      let nearestIdx = -1,
+        minDist = Infinity;
       unvisited.forEach((loc, idx) => {
         let dist = getDistanceFromLatLonInKm(
           currentLoc[1],
@@ -1523,88 +1335,36 @@ document
           nearestIdx = idx;
         }
       });
-
       if (nearestIdx !== -1) {
-        let nextStop = unvisited[nearestIdx];
-        routePoints.push(nextStop);
-        currentLoc = nextStop.geometry.coordinates;
+        routePoints.push(unvisited[nearestIdx]);
+        currentLoc = unvisited[nearestIdx].geometry.coordinates;
         unvisited.splice(nearestIdx, 1);
       }
     }
 
-    // TỐI ƯU HÓA: Gọi API Mapbox theo đúng phương tiện (xe máy/ô tô hoặc đi bộ)
-    let coordsString = userLocation[0] + "," + userLocation[1] + ";";
-    coordsString += routePoints
-      .map((p) => p.geometry.coordinates[0] + "," + p.geometry.coordinates[1])
-      .join(";");
+    itineraryMarkers.forEach((m) => m.remove());
+    itineraryMarkers = [];
+    routePoints.forEach((p, index) => {
+      const el = document.createElement("div");
+      el.className = "itinerary-marker";
+      el.innerText = index + 1;
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat(p.geometry.coordinates)
+        .addTo(map);
+      el.onclick = () => openLocationSidebar(p);
+      itineraryMarkers.push(marker);
+    });
 
-    try {
-      // Truyền 'vehicle' (driving/walking) vào URL
-      const url = `https://api.mapbox.com/directions/v5/mapbox/${vehicle}/${coordsString}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
-      const res = await fetch(url);
-      const data = await res.json();
+    const v = document.querySelector('input[name="iti_vehicle"]:checked').value;
+    await drawRoute(
+      userLocation,
+      routePoints[routePoints.length - 1].geometry.coordinates,
+      v,
+    );
 
-      if (data.routes && data.routes.length > 0) {
-        const route = data.routes[0].geometry;
-
-        // Xóa hiển thị route cũ nếu có
-        if (map.getSource("route-src"))
-          map.getSource("route-src").setData(route);
-
-        // Zoom vừa vặn màn hình
-        const bounds = route.coordinates.reduce(
-          (b, coord) => b.extend(coord),
-          new mapboxgl.LngLatBounds(route.coordinates[0], route.coordinates[0]),
-        );
-        map.fitBounds(bounds, { padding: 80 });
-
-        // Cập nhật Markers 1, 2, 3...
-        itineraryMarkers.forEach((m) => m.remove());
-        itineraryMarkers = [];
-
-        routePoints.forEach((p, index) => {
-          const el = document.createElement("div");
-          el.className = "itinerary-marker";
-          el.innerText = index + 1;
-
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat(p.geometry.coordinates)
-            .addTo(map);
-
-          el.addEventListener("click", () => openLocationSidebar(p));
-          itineraryMarkers.push(marker);
-        });
-
-        document.getElementById("itinerary-modal").classList.remove("active");
-        if (window.Toast)
-          window.Toast.show(
-            `Thành công! Lộ trình ${routePoints.length} điểm đã được vẽ trên bản đồ.`,
-            "success",
-          );
-      } else {
-        if (window.Toast)
-          window.Toast.show("Không thể nối đường giữa các điểm này.", "error");
-      }
-    } catch (e) {
-      if (window.Toast) window.Toast.show("Lỗi mạng khi gọi Mapbox.", "error");
-    } finally {
-      btnGen.innerHTML = '<i class="fa-solid fa-route"></i> Bắt đầu chuyến đi!';
-      btnGen.disabled = false;
-    }
+    btnGen.innerHTML = "Tính toán lộ trình";
+    btnGen.disabled = false;
+    document.getElementById("itinerary-modal").classList.remove("active");
   });
 
-// ==========================================
-// ĐIỀU KHIỂN NÚT 3 GẠCH (MENU LỌC DI ĐỘNG)
-// ==========================================
-document
-  .getElementById("mobile-filter-toggle")
-  ?.addEventListener("click", () => {
-    document.getElementById("filter-menu").classList.toggle("show");
-  });
-
-// Trải nghiệm App: Khi bấm chọn 1 Danh mục, Menu tự động thu lại
-document.querySelectorAll("#filter-menu .filter-btn").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    document.getElementById("filter-menu").classList.remove("show");
-  });
-});
+window.onload = initMap;

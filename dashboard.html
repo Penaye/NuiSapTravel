@@ -431,5 +431,296 @@
         </div>
       </div>
     </div>
+    <!-- MODAL QUẢN LÝ GIÁ (PRICE TRANSPARENCY) -->
+    <div class="modal" id="price-modal">
+      <div class="modal-content" style="max-width: 650px; background: #f8fafc">
+        <!-- HEADER MODAL -->
+        <div
+          class="modal-header"
+          style="
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0;
+            padding: 20px 24px;
+          "
+        >
+          <div>
+            <h3
+              id="price-modal-title"
+              style="
+                margin: 0;
+                color: #1e293b;
+                font-size: 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              "
+            >
+              <i class="fa-solid fa-tags" style="color: #10b981"></i> Quản lý
+              Bảng giá
+            </h3>
+            <p style="margin: 5px 0 0 0; font-size: 13px; color: #64748b">
+              Địa điểm:
+              <strong id="price-loc-name" style="color: #0052cc">...</strong>
+            </p>
+          </div>
+          <button
+            id="close-price-modal-btn"
+            class="btn-icon"
+            style="font-size: 24px; color: #94a3b8"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body" style="padding: 24px">
+          <!-- KHU VỰC THÊM/SỬA GIÁ (Dạng Thẻ) -->
+          <div
+            style="
+              background: white;
+              padding: 20px;
+              border-radius: 10px;
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+              margin-bottom: 25px;
+              border: 1px solid #e2e8f0;
+            "
+          >
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 15px;
+              "
+            >
+              <h4
+                style="
+                  margin: 0;
+                  font-size: 15px;
+                  color: #1e293b;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <i class="fa-solid fa-pen-to-square" style="color: #f59e0b"></i>
+                Thêm / Cập nhật dịch vụ
+              </h4>
+              <button
+                id="btn-reset-price-form"
+                class="btn-icon"
+                style="
+                  font-size: 12px;
+                  color: #64748b;
+                  background: #f1f5f9;
+                  padding: 4px 8px;
+                  border-radius: 4px;
+                "
+              >
+                Làm mới form
+              </button>
+            </div>
+
+            <input type="hidden" id="price-item-id" />
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 15px;
+                margin-bottom: 15px;
+              "
+            >
+              <div>
+                <label
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #475569;
+                    margin-bottom: 5px;
+                    display: block;
+                  "
+                  >Tên món / Dịch vụ
+                  <span style="color: #ef4444">*</span></label
+                >
+                <input
+                  type="text"
+                  id="price-item-name"
+                  class="form-input"
+                  style="margin-bottom: 0"
+                  placeholder="VD: Gà đốt lá chúc, Vé vào cổng..."
+                />
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #475569;
+                    margin-bottom: 5px;
+                    display: block;
+                  "
+                  >Đơn vị tính <span style="color: #ef4444">*</span></label
+                >
+                <input
+                  type="text"
+                  id="price-item-unit"
+                  class="form-input"
+                  style="margin-bottom: 0"
+                  placeholder="VD: VNĐ/Con, Vé"
+                />
+              </div>
+            </div>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+                margin-bottom: 15px;
+              "
+            >
+              <div>
+                <label
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #475569;
+                    margin-bottom: 5px;
+                    display: block;
+                  "
+                  >Giá thấp nhất (VNĐ)
+                  <span style="color: #ef4444">*</span></label
+                >
+                <div style="position: relative">
+                  <span
+                    style="
+                      position: absolute;
+                      left: 12px;
+                      top: 50%;
+                      transform: translateY(-50%);
+                      color: #94a3b8;
+                      font-weight: 600;
+                    "
+                    >đ</span
+                  >
+                  <input
+                    type="number"
+                    id="price-item-min"
+                    class="form-input"
+                    style="margin-bottom: 0; padding-left: 30px"
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div>
+                <label
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #475569;
+                    margin-bottom: 5px;
+                    display: block;
+                  "
+                  >Giá cao nhất (VNĐ)</label
+                >
+                <div style="position: relative">
+                  <span
+                    style="
+                      position: absolute;
+                      left: 12px;
+                      top: 50%;
+                      transform: translateY(-50%);
+                      color: #94a3b8;
+                      font-weight: 600;
+                    "
+                    >đ</span
+                  >
+                  <input
+                    type="number"
+                    id="price-item-max"
+                    class="form-input"
+                    style="margin-bottom: 0; padding-left: 30px"
+                    min="0"
+                    placeholder="Bỏ trống nếu giá cố định"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style="text-align: right">
+              <button
+                id="btn-save-price"
+                class="btn btn-primary"
+                style="
+                  padding: 10px 24px;
+                  border-radius: 8px;
+                  box-shadow: 0 4px 12px rgba(0, 82, 204, 0.2);
+                "
+              >
+                <i class="fa-solid fa-floppy-disk"></i> Lưu Giá
+              </button>
+            </div>
+          </div>
+
+          <!-- KHU VỰC DANH SÁCH GIÁ -->
+          <div
+            style="
+              background: white;
+              padding: 20px;
+              border-radius: 10px;
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+              border: 1px solid #e2e8f0;
+            "
+          >
+            <h4
+              style="
+                margin: 0 0 15px 0;
+                font-size: 15px;
+                color: #1e293b;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              "
+            >
+              <i class="fa-solid fa-list-check" style="color: #3b82f6"></i> Dịch
+              vụ đang áp dụng
+            </h4>
+            <div
+              style="
+                max-height: 220px;
+                overflow-y: auto;
+                border: 1px solid #f1f5f9;
+                border-radius: 8px;
+              "
+            >
+              <table
+                class="data-table"
+                id="prices-table"
+                style="font-size: 13px; width: 100%"
+              >
+                <thead
+                  style="
+                    background: #f8fafc;
+                    position: sticky;
+                    top: 0;
+                    z-index: 1;
+                  "
+                >
+                  <tr>
+                    <th style="padding: 12px">Tên dịch vụ</th>
+                    <th style="padding: 12px">Mức giá</th>
+                    <th style="padding: 12px">Cập nhật</th>
+                    <th style="padding: 12px; text-align: center">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

@@ -453,7 +453,7 @@ textarea.form-input {
 @media (max-width: 768px) {
   /* --- 1. TRANG BẢN ĐỒ (MAP VIEW) --- */
 
-  /* Biến thanh tài khoản thành Bottom Navigation (Giống Shopee/Grab) */
+  /* Biến thanh tài khoản thành Bottom Navigation */
   #auth-section.admin-access-btn {
     position: fixed;
     bottom: 0;
