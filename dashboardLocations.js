@@ -3,18 +3,31 @@ window.DashboardLocations = {
   itemsPerPage: 10,
   totalPages: 1,
   currentUploadedUrls: [],
-  currentPriceLocationId: null, // Lưu ID địa điểm đang mở bảng giá
+  currentPriceLocationId: null,
+  locationsCacheMap: {},
+  priceItemsCacheMap: {},
+
+  escapeHTML: function (str) {
+    return window.Phase2Engine
+      ? window.Phase2Engine.escapeHTML(str)
+      : String(str || "");
+  },
 
   init: function () {
     this.setupPaginationEvents();
     this.loadLocationsFromDB();
     this.setupModalEvents();
-    this.setupPriceModalEvents(); // Khởi chạy sự kiện cho Bảng giá
+    this.setupPriceModalEvents();
+    if (window.DashboardApp.currentProfile?.role === "admin") {
+      this.loadCommunityPriceModeration();
+      this.loadDiscrepancyReports();
+    }
   },
 
   setupPaginationEvents: function () {
     const self = this;
     const paginationContainer = document.getElementById("loc-pagination");
+    if (!paginationContainer) return;
     const prevBtn = paginationContainer.querySelector(".btn-prev");
     const nextBtn = paginationContainer.querySelector(".btn-next");
 
@@ -44,15 +57,21 @@ window.DashboardLocations = {
     const from = (this.currentPage - 1) * this.itemsPerPage;
     const to = from + this.itemsPerPage - 1;
 
-    tableBody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:#0052cc; margin-bottom:10px;"></i><br><span style="color:#666; font-size:14px;">Đang tải dữ liệu...</span></td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px;"><i class="fa-solid fa-spinner fa-spin" style="font-size:24px; color:#0052cc; margin-bottom:10px;"></i><br><span style="color:#666; font-size:14px;">Đang tải dữ liệu...</span></td></tr>`;
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from("locations")
       .select("*, categories!locations_category_id_fkey(name)", {
         count: "exact",
       })
-      .order("id", { ascending: false })
-      .range(from, to);
+      .order("id", { ascending: false });
+
+    // Nếu là manager thì chỉ quản lý các điểm của chính mình
+    if (window.DashboardApp.currentProfile?.role === "manager") {
+      query = query.eq("owner_id", window.DashboardApp.currentUser.id);
+    }
+
+    const { data, error, count } = await query.range(from, to);
 
     if (error) {
       if (window.Toast) window.Toast.show("Lỗi tải dữ liệu", "error");
@@ -60,30 +79,31 @@ window.DashboardLocations = {
     }
 
     this.totalPages = Math.ceil(count / this.itemsPerPage) || 1;
-    document.getElementById("stat-location-count").textContent = count;
+    const statLoc = document.getElementById("stat-location-count");
+    if (statLoc) statLoc.textContent = count;
     pageInfo.textContent = `Trang ${this.currentPage} / ${this.totalPages}`;
     prevBtn.disabled = this.currentPage === 1;
     nextBtn.disabled = this.currentPage === this.totalPages;
 
     tableBody.innerHTML = "";
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
       tableBody.innerHTML =
         "<tr><td colspan='5' style='text-align:center;'>Không có dữ liệu.</td></tr>";
       return;
     }
 
+    this.locationsCacheMap = {};
     data.forEach((item) => {
-      const itemData = encodeURIComponent(JSON.stringify(item));
+      this.locationsCacheMap[item.id] = item;
       const tr = document.createElement("tr");
-
-      // BỔ SUNG: Nút "Định Giá" (btn-prices) vào cột Hành động
       tr.innerHTML = `
-        <td>#${item.id}</td><td><strong>${item.name}</strong></td>
-        <td>${item.categories?.name || "Chưa phân loại"}</td>
-        <td><span class="status-badge ${item.status === "active" ? "active" : "pending"}">${item.status}</span></td>
+        <td>#${item.id}</td>
+        <td><strong>${this.escapeHTML(item.name)}</strong></td>
+        <td>${this.escapeHTML(item.categories?.name || "Chưa phân loại")}</td>
+        <td><span class="status-badge ${item.status === "active" ? "active" : "pending"}">${this.escapeHTML(item.status)}</span></td>
         <td>
-          <button class="btn-icon btn-prices" data-id="${item.id}" data-name="${item.name}" style="color: #10b981;" title="Quản lý giá"><i class="fa-solid fa-tags"></i></button>
-          <button class="btn-icon edit" data-item="${itemData}" style="color: #f59e0b;" title="Sửa địa điểm"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon btn-prices" data-id="${item.id}" style="color: #10b981;" title="Quản lý giá"><i class="fa-solid fa-tags"></i></button>
+          <button class="btn-icon edit" data-id="${item.id}" style="color: #f59e0b;" title="Sửa địa điểm"><i class="fa-solid fa-pen"></i></button>
           <button class="btn-icon delete" data-id="${item.id}" style="color: #ef4444;" title="Xóa địa điểm"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
@@ -111,7 +131,6 @@ window.DashboardLocations = {
         if (isConfirmed) {
           currentBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
           currentBtn.disabled = true;
-
           await supabase.from("locations").delete().eq("id", id);
           if (window.Toast) window.Toast.show("Đã xóa địa điểm", "success");
           self.loadLocationsFromDB();
@@ -121,8 +140,9 @@ window.DashboardLocations = {
 
     document.querySelectorAll(".edit").forEach((btn) =>
       btn.addEventListener("click", (e) => {
-        const rawData = e.currentTarget.getAttribute("data-item");
-        const item = JSON.parse(decodeURIComponent(rawData));
+        const id = e.currentTarget.getAttribute("data-id");
+        const item = self.locationsCacheMap[id];
+        if (!item) return;
 
         document.getElementById("loc-id").value = item.id;
         document.getElementById("loc-name").value = item.name;
@@ -131,7 +151,7 @@ window.DashboardLocations = {
         document.getElementById("loc-lng").value = item.lng;
         document.getElementById("loc-desc").value = item.description || "";
 
-        self.currentUploadedUrls = item.image_urls || [];
+        self.currentUploadedUrls = item.image_urls ? [...item.image_urls] : [];
         if (
           item.image_url &&
           !self.currentUploadedUrls.includes(item.image_url)
@@ -159,12 +179,11 @@ window.DashboardLocations = {
       }),
     );
 
-    // BẮT SỰ KIỆN CHO NÚT "ĐỊNH GIÁ"
     document.querySelectorAll(".btn-prices").forEach((btn) =>
       btn.addEventListener("click", (e) => {
         const locId = e.currentTarget.getAttribute("data-id");
-        const locName = e.currentTarget.getAttribute("data-name");
-        self.openPriceModal(locId, locName);
+        const item = self.locationsCacheMap[locId];
+        self.openPriceModal(locId, item ? item.name : "");
       }),
     );
   },
@@ -177,50 +196,44 @@ window.DashboardLocations = {
     this.currentUploadedUrls.forEach((url, index) => {
       const wrap = document.createElement("div");
       wrap.className = "img-wrap";
-      wrap.innerHTML = `<img src="${url}" /><button type="button" class="remove-img-btn" data-type="url" data-index="${index}"><i class="fa-solid fa-xmark"></i></button>`;
+      const img = document.createElement("img");
+      img.src = window.Phase2Engine
+        ? window.Phase2Engine.sanitizeUrl(url)
+        : url;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "remove-img-btn";
+      btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+      btn.onclick = () => {
+        self.currentUploadedUrls.splice(index, 1);
+        self.renderPreviewGallery(
+          document.getElementById("loc-image-file").files,
+        );
+      };
+      wrap.appendChild(img);
+      wrap.appendChild(btn);
       container.appendChild(wrap);
     });
 
-    Array.from(localFiles).forEach((file, index) => {
+    Array.from(localFiles).forEach((file) => {
       const reader = new FileReader();
       reader.onload = function (e) {
         const wrap = document.createElement("div");
         wrap.className = "img-wrap";
-        wrap.innerHTML = `<img src="${e.target.result}" style="border-color:#10b981;" title="Ảnh chưa lưu" />`;
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.style.borderColor = "#10b981";
+        img.title = "Ảnh chưa lưu";
+        wrap.appendChild(img);
         container.appendChild(wrap);
       };
       reader.readAsDataURL(file);
     });
-
-    container
-      .querySelectorAll('.remove-img-btn[data-type="url"]')
-      .forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-          const idx = e.currentTarget.getAttribute("data-index");
-          self.currentUploadedUrls.splice(idx, 1);
-          self.renderPreviewGallery(
-            document.getElementById("loc-image-file").files,
-          );
-        });
-      });
   },
 
   setupModalEvents: function () {
     const modal = document.getElementById("location-modal");
     const self = this;
-
-    document
-      .getElementById("close-price-modal-btn")
-      .addEventListener("click", () => {
-        priceModal.classList.remove("active");
-        self.resetPriceForm();
-      });
-
-    // Nút làm mới form nhỏ gọn
-    const btnReset = document.getElementById("btn-reset-price-form");
-    if (btnReset) {
-      btnReset.addEventListener("click", () => self.resetPriceForm());
-    }
 
     document
       .getElementById("loc-image-file")
@@ -268,7 +281,7 @@ window.DashboardLocations = {
     document
       .getElementById("save-location-btn")
       .addEventListener("click", async (e) => {
-        const btn = e.target;
+        const btn = e.currentTarget;
         const supabase = window.DashboardApp.supabase;
         const currentUser = window.DashboardApp.currentUser;
         const currentProfile = window.DashboardApp.currentProfile;
@@ -303,10 +316,11 @@ window.DashboardLocations = {
             const { error: uploadError } = await supabase.storage
               .from("location-images")
               .upload(fileName, file);
-            if (!uploadError)
+            if (!uploadError) {
               return supabase.storage
                 .from("location-images")
                 .getPublicUrl(fileName).data.publicUrl;
+            }
             return null;
           });
           const newUrls = await Promise.all(uploadPromises);
@@ -350,29 +364,37 @@ window.DashboardLocations = {
 
         resetAndCloseModal();
         self.loadLocationsFromDB();
-        if (currentProfile?.role === "admin" && window.DashboardUsers)
+        if (currentProfile?.role === "admin" && window.DashboardUsers) {
           window.DashboardUsers.loadPendingLocations();
+        }
       });
   },
 
   // ===============================================
-  // QUẢN LÝ BẢNG GIÁ (PHASE 1)
+  // QUẢN LÝ BẢNG GIÁ NIÊM YẾT (ĐÃ THÊM RÀNG BUỘC MIN <= MAX)
   // ===============================================
   setupPriceModalEvents: function () {
     const self = this;
     const priceModal = document.getElementById("price-modal");
+    if (!priceModal) return;
 
     document
       .getElementById("close-price-modal-btn")
-      .addEventListener("click", () => {
+      ?.addEventListener("click", () => {
         priceModal.classList.remove("active");
         self.resetPriceForm();
       });
 
     document
+      .getElementById("btn-reset-price-form")
+      ?.addEventListener("click", () => {
+        self.resetPriceForm();
+      });
+
+    document
       .getElementById("btn-save-price")
-      .addEventListener("click", async (e) => {
-        const btn = e.target;
+      ?.addEventListener("click", async (e) => {
+        const btn = e.currentTarget;
         const itemName = document
           .getElementById("price-item-name")
           .value.trim();
@@ -385,19 +407,28 @@ window.DashboardLocations = {
         let itemMax = parseFloat(
           document.getElementById("price-item-max").value,
         );
+        const conditionType =
+          document.getElementById("price-item-condition")?.value || "normal";
         const priceItemId = document.getElementById("price-item-id").value;
 
-        if (!itemName || !itemUnit || isNaN(itemMin)) {
+        if (!itemName || !itemUnit || isNaN(itemMin) || itemMin < 0) {
           if (window.Toast)
             window.Toast.show(
-              "Vui lòng điền đủ Tên, Đơn vị và Giá thấp nhất!",
+              "Vui lòng điền đủ Tên, Đơn vị và Giá thấp nhất >= 0!",
               "info",
             );
           return;
         }
 
-        // Nếu không nhập Giá max, tự động gán bằng Giá min
         if (isNaN(itemMax)) itemMax = itemMin;
+        if (itemMax < itemMin) {
+          if (window.Toast)
+            window.Toast.show(
+              "Lỗi: Giá cao nhất không được nhỏ hơn giá thấp nhất!",
+              "error",
+            );
+          return;
+        }
 
         btn.disabled = true;
         btn.innerHTML =
@@ -410,10 +441,11 @@ window.DashboardLocations = {
           unit: itemUnit,
           price_min: itemMin,
           price_max: itemMax,
+          condition_type: conditionType,
+          updated_at: new Date().toISOString(),
         };
 
         if (priceItemId) {
-          // Cập nhật giá
           const { error } = await supabase
             .from("price_items")
             .update(payload)
@@ -421,7 +453,6 @@ window.DashboardLocations = {
           if (error) window.Toast?.show("Lỗi: " + error.message, "error");
           else window.Toast?.show("Cập nhật giá thành công!", "success");
         } else {
-          // Thêm giá mới
           const { error } = await supabase
             .from("price_items")
             .insert([payload]);
@@ -430,9 +461,9 @@ window.DashboardLocations = {
         }
 
         btn.disabled = false;
-        btn.innerHTML = "Lưu Giá";
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Giá';
         self.resetPriceForm();
-        self.loadPricesTable(); // Tải lại bảng
+        self.loadPricesTable();
       });
   },
 
@@ -450,7 +481,11 @@ window.DashboardLocations = {
     document.getElementById("price-item-unit").value = "";
     document.getElementById("price-item-min").value = "";
     document.getElementById("price-item-max").value = "";
-    document.getElementById("btn-save-price").textContent = "Thêm Giá Mới";
+    if (document.getElementById("price-item-condition")) {
+      document.getElementById("price-item-condition").value = "normal";
+    }
+    document.getElementById("btn-save-price").innerHTML =
+      '<i class="fa-solid fa-floppy-disk"></i> Lưu Giá';
   },
 
   loadPricesTable: async function () {
@@ -469,50 +504,63 @@ window.DashboardLocations = {
       return;
     }
 
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
       tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#64748b;">Chưa có dịch vụ nào được định giá.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = "";
     const formatCur = (val) => new Intl.NumberFormat("vi-VN").format(val);
+    const condMap = window.Phase2Engine?.CONFIG.CONDITION_LABELS || {};
     const self = this;
+    this.priceItemsCacheMap = {};
 
     data.forEach((item) => {
+      this.priceItemsCacheMap[item.id] = item;
       const priceText =
-        item.price_min === item.price_max
-          ? `${formatCur(item.price_min)} ${item.unit}`
-          : `${formatCur(item.price_min)} - ${formatCur(item.price_max)} ${item.unit}`;
+        Number(item.price_min) === Number(item.price_max)
+          ? `${formatCur(item.price_min)} ${this.escapeHTML(item.unit)}`
+          : `${formatCur(item.price_min)} - ${formatCur(item.price_max)} ${this.escapeHTML(item.unit)}`;
 
       const dateText = new Date(item.updated_at).toLocaleDateString("vi-VN");
+      const condLabel =
+        condMap[item.condition_type || "normal"] || "Ngày thường";
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td><strong>${item.item_name}</strong></td>
+        <td>
+          <strong>${this.escapeHTML(item.item_name)}</strong><br/>
+          <span style="font-size:11px; color:#64748b;">${this.escapeHTML(condLabel)}</span>
+        </td>
         <td style="color: #0052cc; font-weight: 600;">${priceText}</td>
         <td style="font-size: 11px; color:#64748b;">${dateText}</td>
-        <td>
-          <button class="btn-icon edit-price" data-item='${JSON.stringify(item)}' style="color: #f59e0b;"><i class="fa-solid fa-pen"></i></button>
+        <td style="text-align:center;">
+          <button class="btn-icon edit-price" data-id="${item.id}" style="color: #f59e0b;"><i class="fa-solid fa-pen"></i></button>
           <button class="btn-icon delete-price" data-id="${item.id}" style="color: #ef4444;"><i class="fa-solid fa-trash"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
     });
 
-    // Sự kiện Sửa giá
     tbody.querySelectorAll(".edit-price").forEach((btn) =>
       btn.addEventListener("click", (e) => {
-        const item = JSON.parse(e.currentTarget.getAttribute("data-item"));
+        const id = e.currentTarget.getAttribute("data-id");
+        const item = self.priceItemsCacheMap[id];
+        if (!item) return;
         document.getElementById("price-item-id").value = item.id;
         document.getElementById("price-item-name").value = item.item_name;
         document.getElementById("price-item-unit").value = item.unit;
         document.getElementById("price-item-min").value = item.price_min;
         document.getElementById("price-item-max").value = item.price_max;
-        document.getElementById("btn-save-price").textContent = "Cập Nhật Giá";
+        if (document.getElementById("price-item-condition")) {
+          document.getElementById("price-item-condition").value =
+            item.condition_type || "normal";
+        }
+        document.getElementById("btn-save-price").innerHTML =
+          '<i class="fa-solid fa-check"></i> Cập Nhật Giá';
       }),
     );
 
-    // Sự kiện Xóa giá
     tbody.querySelectorAll(".delete-price").forEach((btn) =>
       btn.addEventListener("click", async (e) => {
         const priceId = e.currentTarget.getAttribute("data-id");
@@ -526,6 +574,180 @@ window.DashboardLocations = {
           await supabase.from("price_items").delete().eq("id", priceId);
           window.Toast?.show("Đã xóa mức giá!", "success");
           self.loadPricesTable();
+        }
+      }),
+    );
+  },
+
+  // ===============================================
+  // PHASE 2 ADMIN: DUYỆT GIÁ THỰC TRẢ & XỬ LÝ BÁO CÁO GIÁ SAI
+  // ===============================================
+  loadCommunityPriceModeration: async function () {
+    const tbody = document.querySelector("#community-prices-table tbody");
+    if (!tbody) return;
+    const supabase = window.DashboardApp.supabase;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
+
+    const { data, error } = await supabase
+      .from("community_price_reports")
+      .select("*, locations(name)")
+      .eq("is_test_data", false)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error || !data) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Chưa có dữ liệu hoặc chưa chạy SQL Migration Phase 2.</td></tr>`;
+      return;
+    }
+
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">Chưa có phản hồi giá thực trả nào.</td></tr>`;
+      return;
+    }
+
+    const fmt = (v) => new Intl.NumberFormat("vi-VN").format(v);
+    const condMap = window.Phase2Engine?.CONFIG.CONDITION_LABELS || {};
+    tbody.innerHTML = "";
+
+    data.forEach((item) => {
+      const tr = document.createElement("tr");
+      const safeReceipt = window.Phase2Engine?.sanitizeUrl(item.receipt_url);
+      tr.innerHTML = `
+        <td>
+          <strong>${this.escapeHTML(item.locations?.name || "")}</strong><br/>
+          <span style="font-size:12px; color:#0052cc;">${this.escapeHTML(item.service_name)} (${this.escapeHTML(item.unit)})</span>
+        </td>
+        <td style="font-weight:700; color:#059669;">${fmt(item.actual_price)} đ</td>
+        <td style="font-size:12px;">
+          ${this.escapeHTML(condMap[item.condition_type] || item.condition_type)}<br/>
+          <span style="color:#64748b;">${this.escapeHTML(item.transaction_date)}</span>
+        </td>
+        <td>
+          ${safeReceipt ? `<a href="${safeReceipt}" target="_blank" rel="noopener noreferrer" style="color:#0052cc; font-size:12px;"><i class="fa-solid fa-image"></i> Xem hóa đơn</a>` : "<span style='font-size:12px; color:#94a3b8;'>Không kèm ảnh</span>"}
+        </td>
+        <td><span class="status-badge ${item.moderation_status === "approved" ? "active" : "pending"}">${this.escapeHTML(item.moderation_status)}</span></td>
+        <td>
+          <button class="btn btn-primary btn-cpr-act" data-id="${item.id}" data-status="approved" style="padding:4px 8px; font-size:12px;">Duyệt</button>
+          <button class="btn btn-outline btn-cpr-act" data-id="${item.id}" data-status="rejected" style="padding:4px 8px; font-size:12px; color:#ef4444; border-color:#ef4444;">Từ chối</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const self = this;
+    tbody.querySelectorAll(".btn-cpr-act").forEach((btn) =>
+      btn.addEventListener("click", async (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        const status = e.currentTarget.getAttribute("data-status");
+        const { error: upErr } = await supabase
+          .from("community_price_reports")
+          .update({
+            moderation_status: status,
+            verification_level:
+              status === "approved" ? "verified_by_mod" : "unverified",
+            reviewed_by: window.DashboardApp.currentUser.id,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq("id", id);
+        if (!upErr) {
+          window.Toast?.show(`Đã cập nhật trạng thái: ${status}`, "success");
+          self.loadCommunityPriceModeration();
+        }
+      }),
+    );
+  },
+
+  loadDiscrepancyReports: async function () {
+    const tbody = document.querySelector("#discrepancy-reports-table tbody");
+    if (!tbody) return;
+    const supabase = window.DashboardApp.supabase;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
+
+    const { data, error } = await supabase
+      .from("price_discrepancy_reports")
+      .select("*, locations(name)")
+      .eq("is_test_data", false)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error || !data) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Chưa có dữ liệu hoặc chưa chạy SQL Migration Phase 2.</td></tr>`;
+      return;
+    }
+
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">Không có báo cáo giá sai nào.</td></tr>`;
+      return;
+    }
+
+    const fmt = (v) =>
+      v !== null && v !== undefined
+        ? new Intl.NumberFormat("vi-VN").format(v) + " đ"
+        : "Không rõ";
+    tbody.innerHTML = "";
+
+    data.forEach((item) => {
+      const tr = document.createElement("tr");
+      const urls = Array.isArray(item.evidence_urls) ? item.evidence_urls : [];
+      const linksHtml = urls
+        .map((u, idx) => {
+          const safe = window.Phase2Engine?.sanitizeUrl(u);
+          return safe
+            ? `<a href="${safe}" target="_blank" rel="noopener noreferrer" style="font-size:12px; color:#0052cc; margin-right:6px;">Ảnh ${idx + 1}</a>`
+            : "";
+        })
+        .join("");
+
+      tr.innerHTML = `
+        <td>
+          <strong>${this.escapeHTML(item.locations?.name || "")}</strong><br/>
+          <span style="font-size:12px; color:#dc2626;">${this.escapeHTML(item.service_name)}</span>
+        </td>
+        <td style="font-size:12px;">
+          Niêm yết: <strong>${fmt(item.listed_price)}</strong><br/>
+          Thực thu: <strong style="color:#dc2626;">${fmt(item.charged_price)}</strong>
+        </td>
+        <td style="max-width:240px; font-size:12px;">
+          ${this.escapeHTML(item.description)}<br/>
+          <span style="color:#64748b; font-size:11px;">Ngày: ${this.escapeHTML(item.incident_date)}</span>
+        </td>
+        <td>${linksHtml || "<span style='font-size:12px; color:#94a3b8;'>Không có</span>"}</td>
+        <td style="font-size:12px;">
+          <span class="status-badge ${item.status === "resolved" ? "active" : "pending"}">${this.escapeHTML(item.status)}</span>
+          ${item.admin_response ? `<div style="margin-top:4px; color:#334155;">PH: ${this.escapeHTML(item.admin_response)}</div>` : ""}
+        </td>
+        <td>
+          <button class="btn btn-primary btn-dr-act" data-id="${item.id}" data-status="resolved" style="padding:4px 8px; font-size:12px;">Đã xử lý</button>
+          <button class="btn btn-outline btn-dr-act" data-id="${item.id}" data-status="rejected" style="padding:4px 8px; font-size:12px; color:#ef4444; border-color:#ef4444;">Bác bỏ</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const self = this;
+    tbody.querySelectorAll(".btn-dr-act").forEach((btn) =>
+      btn.addEventListener("click", async (e) => {
+        const id = e.currentTarget.getAttribute("data-id");
+        const status = e.currentTarget.getAttribute("data-status");
+        const note = window.prompt(
+          "Nhập nội dung phản hồi / kết quả xử lý của Ban quản trị:",
+          "Đã kiểm tra và nhắc nhở cơ sở cập nhật đúng giá niêm yết.",
+        );
+        if (note === null) return;
+
+        const { error: upErr } = await supabase
+          .from("price_discrepancy_reports")
+          .update({
+            status: status,
+            admin_response: note.trim(),
+            resolved_by: window.DashboardApp.currentUser.id,
+            resolved_at: new Date().toISOString(),
+          })
+          .eq("id", id);
+
+        if (!upErr) {
+          window.Toast?.show("Đã cập nhật kết quả xử lý báo cáo!", "success");
+          self.loadDiscrepancyReports();
         }
       }),
     );

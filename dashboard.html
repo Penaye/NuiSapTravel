@@ -13,16 +13,21 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
+
+    <!-- SỬ DỤNG MAPLIBRE GL JS (Thay thế Mapbox GL JS) -->
     <link
-      href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css"
+      href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css"
       rel="stylesheet"
     />
-    <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+
+    <!-- SUPABASE & CHART.JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- CẤU HÌNH & CÁC MODULE CHỨC NĂNG -->
     <script src="config.js" defer></script>
+    <script src="phase2_verifier.js" defer></script>
     <script src="dashboardMap.js" defer></script>
     <script src="dashboardAnalytics.js" defer></script>
     <script src="dashboardLocations.js" defer></script>
@@ -57,7 +62,7 @@
         width: 100%;
       }
 
-      /* Style mới cho Grid Preview Ảnh */
+      /* Style cho Grid Preview Ảnh */
       .gallery-preview {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -111,6 +116,9 @@
           <li class="nav-item role-admin-only" data-target="approve-locations">
             <i class="fa-solid fa-check-to-slot"></i> Duyệt địa điểm
           </li>
+          <li class="nav-item role-admin-only" data-target="price-moderation">
+            <i class="fa-solid fa-scale-balanced"></i> Kiểm duyệt & Báo cáo Giá
+          </li>
           <li class="nav-item role-admin-only" data-target="manage-users">
             <i class="fa-solid fa-users"></i> Quản lý tài khoản
           </li>
@@ -149,6 +157,7 @@
         </header>
 
         <div class="content-wrapper">
+          <!-- 1. TỔNG QUAN -->
           <section id="view-overview" class="view-section active">
             <div class="stats-grid">
               <div class="stat-card">
@@ -200,6 +209,7 @@
             </div>
           </section>
 
+          <!-- 2. QUẢN LÝ ĐỊA ĐIỂM -->
           <section id="view-manage-locations" class="view-section">
             <div class="section-header">
               <h3>Danh sách địa điểm</h3>
@@ -228,6 +238,7 @@
             </div>
           </section>
 
+          <!-- 3. DUYỆT ĐỊA ĐIỂM -->
           <section
             id="view-approve-locations"
             class="view-section role-admin-only"
@@ -256,6 +267,7 @@
             </div>
           </section>
 
+          <!-- 4. QUẢN LÝ ĐÁNH GIÁ -->
           <section id="view-reviews" class="view-section role-manager-only">
             <div class="section-header">
               <h3>Danh sách Đánh giá của khách</h3>
@@ -282,6 +294,51 @@
             </div>
           </section>
 
+          <!-- 5. KIỂM DUYỆT GIÁ THỰC TRẢ & BÁO CÁO GIÁ SAI (PHASE 2) -->
+          <section
+            id="view-price-moderation"
+            class="view-section role-admin-only"
+          >
+            <div class="section-header">
+              <h3>1. Xác minh Giá thực trả từ Cộng đồng</h3>
+            </div>
+            <div class="table-container" style="margin-bottom: 30px">
+              <table class="data-table" id="community-prices-table">
+                <thead>
+                  <tr>
+                    <th>Địa điểm / Dịch vụ</th>
+                    <th>Giá thực trả</th>
+                    <th>Điều kiện & Ngày</th>
+                    <th>Bằng chứng</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác duyệt</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+            <div class="section-header">
+              <h3>2. Xử lý Báo cáo Giá sai / Chênh lệch giá</h3>
+            </div>
+            <div class="table-container">
+              <table class="data-table" id="discrepancy-reports-table">
+                <thead>
+                  <tr>
+                    <th>Địa điểm / Dịch vụ</th>
+                    <th>Niêm yết vs Thực thu</th>
+                    <th>Nội dung phản ánh</th>
+                    <th>Bằng chứng</th>
+                    <th>Trạng thái & Phản hồi</th>
+                    <th>Xử lý</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- 6. QUẢN LÝ TÀI KHOẢN -->
           <section id="view-manage-users" class="view-section role-admin-only">
             <div class="section-header">
               <h3>Quản lý Tài khoản & Phân quyền</h3>
@@ -390,7 +447,6 @@
           >
             Ảnh địa điểm (Chọn nhiều ảnh):
           </label>
-          <!-- THÊM THUỘC TÍNH MULTIPLE -->
           <input
             type="file"
             id="loc-image-file"
@@ -431,7 +487,8 @@
         </div>
       </div>
     </div>
-    <!-- MODAL QUẢN LÝ GIÁ (PRICE TRANSPARENCY) -->
+
+    <!-- MODAL QUẢN LÝ GIÁ (PRICE TRANSPARENCY - PHASE 1 & 2) -->
     <div class="modal" id="price-modal">
       <div class="modal-content" style="max-width: 650px; background: #f8fafc">
         <!-- HEADER MODAL -->
@@ -474,7 +531,7 @@
         </div>
 
         <div class="modal-body" style="padding: 24px">
-          <!-- KHU VỰC THÊM/SỬA GIÁ (Dạng Thẻ) -->
+          <!-- KHU VỰC THÊM / SỬA GIÁ -->
           <div
             style="
               background: white;
@@ -647,6 +704,29 @@
                   />
                 </div>
               </div>
+            </div>
+
+            <div style="margin-bottom: 15px">
+              <label
+                style="
+                  font-size: 12px;
+                  font-weight: 600;
+                  color: #475569;
+                  margin-bottom: 5px;
+                  display: block;
+                "
+                >Điều kiện áp dụng <span style="color: #ef4444">*</span></label
+              >
+              <select
+                id="price-item-condition"
+                class="form-input"
+                style="margin-bottom: 0"
+              >
+                <option value="normal">Ngày thường (Tiêu chuẩn)</option>
+                <option value="weekend">Cuối tuần (Thứ 7 / CN)</option>
+                <option value="holiday">Dịp Lễ / Tết</option>
+                <option value="peak_season">Mùa cao điểm</option>
+              </select>
             </div>
 
             <div style="text-align: right">

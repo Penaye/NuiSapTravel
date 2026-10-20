@@ -23,13 +23,13 @@
     />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
-    <!-- 2. SUPABASE & TOAST (Thông báo) -->
+    <!-- 2. SUPABASE & TOAST -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="toast.css" />
     <script src="toast.js"></script>
 
     <!-- 3. CSS GIAO DIỆN CHÍNH -->
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=10" />
   </head>
   <body>
     <!-- LOADER -->
@@ -37,6 +37,34 @@
       <div class="spinner"></div>
       <div style="font-weight: 600; color: #1e293b">Đang tải dữ liệu...</div>
     </div>
+
+    <!-- THANH CÔNG CỤ PHÍA TRÊN (TOP NAVBAR) -->
+    <header class="site-navbar">
+      <div class="site-brand" id="brand-reset-map" title="Về trung tâm bản đồ">
+        <div class="brand-logo-icon">
+          <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Du lịch Núi Sập</span>
+          <span class="brand-subtitle">Cổng thông tin & Minh bạch giá</span>
+        </div>
+      </div>
+
+      <nav class="site-nav-links">
+        <button type="button" class="nav-link-btn" id="nav-btn-lookup">
+          <i class="fa-solid fa-robot"></i>
+          <span>Trợ lý Tra cứu</span>
+        </button>
+        <button type="button" class="nav-link-btn" id="nav-btn-explore">
+          <i class="fa-solid fa-book-open"></i>
+          <span>Tìm hiểu</span>
+        </button>
+        <button type="button" class="nav-link-btn" id="nav-btn-about">
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Về chúng tôi</span>
+        </button>
+      </nav>
+    </header>
 
     <!-- BẢN ĐỒ -->
     <div id="map"></div>
@@ -118,27 +146,24 @@
       </div>
     </div>
 
-    <!-- THANH QUẢN TRỊ / NAVBAR ĐÁY (PC & MOBILE) -->
+    <!-- THANH QUẢN TRỊ / NAVBAR ĐÁY (ĐÃ GỘP NÚT LỘ TRÌNH & CHI PHÍ) -->
     <div id="auth-section" class="admin-access-btn">
       <a id="btn-open-itinerary" style="cursor: pointer"
-        ><i class="fa-solid fa-map" style="color: #0052cc"></i> Lộ trình</a
+        ><i class="fa-solid fa-route" style="color: #0052cc"></i> Lộ trình & Chi
+        phí</a
       >
       <span class="separator"></span>
       <a id="btn-leaderboard-in" style="cursor: pointer"
-        ><i class="fa-solid fa-trophy" style="color: #f59e0b"></i>Xếp Hạng</a
+        ><i class="fa-solid fa-trophy" style="color: #f59e0b"></i> Hạng</a
       >
       <span class="separator"></span>
       <a id="btn-show-bookmarks" style="cursor: pointer"
         ><i class="fa-solid fa-heart" style="color: #ef4444"></i> Đã lưu</a
       >
-
-      <!-- Nút Hồ Sơ luôn luôn hiện để user có thể bấm vào đăng nhập -->
       <span class="separator"></span>
       <a href="profile.html" id="btn-profile"
         ><i class="fa-solid fa-user" style="color: #8b5cf6"></i> Hồ sơ</a
       >
-
-      <!-- Nút Quản Trị mặc định bị ẩn (display: none), JS sẽ tự bật nếu là Admin -->
       <span class="separator" id="admin-separator" style="display: none"></span>
       <a
         href="dashboard.html"
@@ -201,8 +226,20 @@
         </div>
 
         <p id="sb-desc"></p>
+
+        <!-- KHU VỰC BẢNG GIÁ & XÁC MINH GIÁ CỘNG ĐỒNG -->
         <div id="sb-prices"></div>
 
+        <div class="price-community-actions">
+          <button id="btn-open-actual-price" class="btn-community-price">
+            <i class="fa-solid fa-receipt"></i> Gửi giá thực trả
+          </button>
+          <button id="btn-open-discrepancy-report" class="btn-report-price">
+            <i class="fa-solid fa-triangle-exclamation"></i> Báo cáo giá sai
+          </button>
+        </div>
+
+        <!-- KHU VỰC ĐÁNH GIÁ -->
         <div class="reviews-section">
           <h3 style="font-size: 16px; margin-bottom: 10px">
             Đánh giá (<span id="review-count">0</span>)
@@ -247,7 +284,6 @@
               placeholder="Chia sẻ trải nghiệm của bạn về địa điểm này..."
             ></textarea>
 
-            <!-- Nút Upload Ảnh Custom -->
             <div class="file-upload-wrapper">
               <input
                 type="file"
@@ -262,7 +298,6 @@
               </label>
             </div>
 
-            <!-- Khung chứa danh sách ảnh chuẩn bị upload -->
             <div
               id="review-image-preview-container"
               class="review-gallery-preview"
@@ -287,7 +322,7 @@
       </div>
     </div>
 
-    <!-- MODAL ĐỊA ĐIỂM ĐÃ LƯU -->
+    <!-- MODAL 1: ĐỊA ĐIỂM ĐÃ LƯU -->
     <div id="bookmarks-modal" class="bm-modal">
       <div class="bm-content">
         <div class="bm-header">
@@ -311,7 +346,7 @@
       </div>
     </div>
 
-    <!-- MODAL BẢNG XẾP HẠNG -->
+    <!-- MODAL 2: BẢNG XẾP HẠNG -->
     <div id="leaderboard-modal" class="bm-modal">
       <div class="bm-content">
         <div class="bm-header">
@@ -335,140 +370,797 @@
       </div>
     </div>
 
-    <!-- MODAL LỊCH TRÌNH THÔNG MINH -->
+    <!-- MODAL 3 (THIẾT KẾ MỚI HIỆN ĐẠI): LẬP LỘ TRÌNH & DỰ TOÁN THÔNG MINH -->
     <div id="itinerary-modal" class="bm-modal">
-      <div class="bm-content" style="padding: 20px">
-        <h2
-          id="itinerary-greeting"
-          style="margin-top: 0; margin-bottom: 15px; font-size: 18px"
-        >
-          Lên lịch trình
-        </h2>
+      <div class="bm-content iti-modern-modal">
+        <!-- HEADER -->
+        <div class="bm-header iti-modal-header">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <div class="iti-header-icon">
+              <i class="fa-solid fa-route"></i>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 17px; color: #0f172a">
+                Lập Lộ Trình & Dự Toán Thông Minh
+              </h3>
+              <span style="font-size: 12px; color: #64748b">
+                Tối ưu thứ tự khung giờ, khoảng cách & ngân sách thực tế
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            id="close-itinerary-modal"
+            class="iti-close-btn"
+            title="Đóng"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
 
-        <div style="margin-bottom: 15px">
-          <span class="iti-label">Thời gian:</span>
-          <div class="chip-group">
-            <label class="chip"
-              ><input
-                type="radio"
-                name="iti_time"
-                value="2"
-                checked
-                style="display: none"
-              /><span>2 Tiếng</span></label
+        <!-- BODY -->
+        <div class="iti-modal-body" id="iti-modal-scroll-body">
+          <!-- Phần 1: Đối tượng chuyến đi (Dàn 4 cột đều nhau, không bao giờ rớt dòng) -->
+          <div class="iti-section">
+            <label class="iti-field-label">1. Đối tượng chuyến đi</label>
+            <div class="iti-companion-grid">
+              <label class="iti-card-radio">
+                <input type="radio" name="iti_companion" value="solo" />
+                <div class="iti-card-content">
+                  <span class="iti-emoji">🚶</span>
+                  <span>Đi 1 mình</span>
+                </div>
+              </label>
+              <label class="iti-card-radio">
+                <input
+                  type="radio"
+                  name="iti_companion"
+                  value="couple"
+                  checked
+                />
+                <div class="iti-card-content">
+                  <span class="iti-emoji">💑</span>
+                  <span>Cặp đôi</span>
+                </div>
+              </label>
+              <label class="iti-card-radio">
+                <input type="radio" name="iti_companion" value="friends" />
+                <div class="iti-card-content">
+                  <span class="iti-emoji">👯</span>
+                  <span>Nhóm bạn</span>
+                </div>
+              </label>
+              <label class="iti-card-radio">
+                <input type="radio" name="iti_companion" value="family" />
+                <div class="iti-card-content">
+                  <span class="iti-emoji">👨‍👩‍👧</span>
+                  <span>Gia đình</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Phần 2: Số người, Thời gian & Thời điểm -->
+          <div class="iti-grid-3">
+            <div>
+              <label class="iti-field-label">Số người tham gia *</label>
+              <div class="iti-stepper-box">
+                <button
+                  type="button"
+                  id="bg-people-minus"
+                  class="iti-step-btn"
+                  title="Giảm 1 người"
+                >
+                  <i class="fa-solid fa-minus"></i>
+                </button>
+                <input
+                  type="number"
+                  id="bg-people"
+                  min="1"
+                  max="100"
+                  value="2"
+                />
+                <button
+                  type="button"
+                  id="bg-people-plus"
+                  class="iti-step-btn"
+                  title="Tăng 1 người"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label class="iti-field-label">Thời lượng chuyến đi *</label>
+              <select id="bg-days" class="iti-select">
+                <option value="0.25">⚡ 2 Tiếng (Tham quan nhanh)</option>
+                <option value="0.5">🌤️ Nửa ngày (1 buổi)</option>
+                <option value="1" selected>☀️ 1 Ngày trọn vẹn</option>
+                <option value="2">🌙 2 Ngày 1 Đêm</option>
+                <option value="3">🏕️ 3 Ngày 2 Đêm</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="iti-field-label">Thời điểm áp dụng giá</label>
+              <select id="bg-condition" class="iti-select">
+                <option value="normal">Ngày thường (Tiêu chuẩn)</option>
+                <option value="weekend">Cuối tuần (Thứ 7 / CN)</option>
+                <option value="holiday">Dịp Lễ / Tết</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Phần 3: Nhu cầu Ăn uống & Lưu trú -->
+          <div class="iti-grid-2">
+            <div>
+              <label class="iti-field-label">Nhu cầu ăn uống</label>
+              <select id="bg-meals" class="iti-select">
+                <option value="0">Không ăn chính (Chỉ tham quan)</option>
+                <option value="1">1 bữa / ngày</option>
+                <option value="2" selected>2 bữa / ngày (Trưa & Chiều)</option>
+                <option value="3">3 bữa / ngày (Sáng, Trưa, Tối)</option>
+              </select>
+            </div>
+            <div>
+              <label class="iti-field-label">Nhu cầu lưu trú</label>
+              <select id="bg-stay" class="iti-select">
+                <option value="false" selected>Không lưu trú qua đêm</option>
+                <option value="true">Có thuê phòng lưu trú</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Phần 4: Phương tiện & Loại địa điểm muốn ghé (Cùng 1 hàng gọn đẹp) -->
+          <div class="iti-grid-transport-pref">
+            <div>
+              <label class="iti-field-label">Phương tiện</label>
+              <div class="iti-pill-group">
+                <label class="iti-pill">
+                  <input
+                    type="radio"
+                    name="iti_vehicle"
+                    value="driving"
+                    checked
+                  />
+                  <span>🛵 Xe máy/Ô tô</span>
+                </label>
+                <label class="iti-pill">
+                  <input type="radio" name="iti_vehicle" value="walking" />
+                  <span>👟 Đi bộ</span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label class="iti-field-label">Loại địa điểm muốn ghé</label>
+              <div class="iti-pill-group">
+                <label class="iti-pill">
+                  <input
+                    type="checkbox"
+                    class="iti-pref"
+                    id="iti-pref-tour"
+                    value="Du lịch"
+                    checked
+                  />
+                  <span>🏞️ Du lịch</span>
+                </label>
+                <label class="iti-pill">
+                  <input
+                    type="checkbox"
+                    class="iti-pref"
+                    id="iti-pref-food"
+                    value="Quán ăn"
+                    checked
+                  />
+                  <span>🍜 Ăn uống</span>
+                </label>
+                <label class="iti-pill">
+                  <input
+                    type="checkbox"
+                    class="iti-pref"
+                    id="iti-pref-stay"
+                    value="Khách sạn"
+                  />
+                  <span>🏨 Lưu trú</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phần 5: Ngân sách dự kiến (Dạng thẻ lưới 4 cột - Không có thanh cuộn ngang) -->
+          <div class="iti-section" style="margin-bottom: 16px">
+            <div class="iti-budget-header">
+              <label class="iti-field-label" style="margin-bottom: 0">
+                Ngân sách tối đa cả đoàn (VNĐ - Tùy chọn)
+              </label>
+              <label class="iti-bookmark-toggle">
+                <input type="checkbox" id="bg-prioritize-bookmarks" checked />
+                <span>Ưu tiên điểm Đã lưu ❤️</span>
+              </label>
+            </div>
+
+            <div class="iti-budget-grid">
+              <button
+                type="button"
+                class="budget-preset-chip active"
+                data-per-person="0"
+              >
+                <span class="bp-title">Không giới hạn</span>
+                <span class="bp-sub">Tất cả mức giá</span>
+              </button>
+              <button
+                type="button"
+                class="budget-preset-chip"
+                data-per-person="200000"
+              >
+                <span class="bp-title">Tiết kiệm</span>
+                <span class="bp-sub">~200k / người</span>
+              </button>
+              <button
+                type="button"
+                class="budget-preset-chip"
+                data-per-person="500000"
+              >
+                <span class="bp-title">Phổ thông</span>
+                <span class="bp-sub">~500k / người</span>
+              </button>
+              <button
+                type="button"
+                class="budget-preset-chip"
+                data-per-person="1000000"
+              >
+                <span class="bp-title">Thoải mái</span>
+                <span class="bp-sub">~1 triệu / người</span>
+              </button>
+            </div>
+
+            <div class="iti-budget-input-wrap">
+              <input
+                type="number"
+                id="bg-max-budget"
+                min="0"
+                step="50000"
+                placeholder="Để trống = Không giới hạn (Hoặc chọn mức gợi ý ở trên)"
+              />
+              <span class="iti-currency-tag">VNĐ</span>
+            </div>
+          </div>
+
+          <!-- Phần 6: Các nút hành động chính -->
+          <div class="iti-action-bar">
+            <button type="button" id="btn-calc-budget" class="iti-btn-primary">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Lập Kế Hoạch &
+              Tính Chi Phí
+            </button>
+            <button
+              type="button"
+              id="btn-generate-route"
+              class="iti-btn-success"
             >
-            <label class="chip"
-              ><input
-                type="radio"
-                name="iti_time"
-                value="4"
-                style="display: none"
-              /><span>Nửa ngày</span></label
+              <i class="fa-solid fa-map-location-dot"></i> Vẽ Lộ Trình Lên Bản
+              Đồ
+            </button>
+            <button
+              type="button"
+              id="btn-clear-route"
+              class="btn-clear-route"
+              style="display: none"
             >
-            <label class="chip"
-              ><input
-                type="radio"
-                name="iti_time"
-                value="6"
-                style="display: none"
-              /><span>Cả ngày</span></label
+              <i class="fa-solid fa-trash-can"></i> Xóa lộ trình
+            </button>
+          </div>
+
+          <!-- KẾT QUẢ DỰ TOÁN & TIMELINE ĐIỂM DỪNG -->
+          <div id="budget-result-container" style="display: none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 4 (PHASE 2): GỬI GIÁ THỰC TRẢ -->
+    <div id="actual-price-modal" class="bm-modal">
+      <div class="bm-content" style="max-width: 460px">
+        <div class="bm-header">
+          <h3>
+            <i class="fa-solid fa-receipt" style="color: #059669"></i> Đóng góp
+            Giá thực trả
+          </h3>
+          <button
+            id="close-actual-price-modal"
+            style="
+              background: none;
+              border: none;
+              font-size: 20px;
+              cursor: pointer;
+            "
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div style="padding: 18px; overflow-y: auto">
+          <p
+            style="
+              font-size: 12px;
+              color: #475569;
+              margin-top: 0;
+              margin-bottom: 12px;
+              background: #f0fdf4;
+              padding: 10px;
+              border-radius: 8px;
+              border: 1px solid #bbf7d0;
+            "
+          >
+            Dữ liệu của bạn giúp cộng đồng du khách đối chiếu với giá niêm yết.
+            Mọi phản hồi sẽ được kiểm duyệt trước khi tính vào thống kê chính
+            thức.
+          </p>
+
+          <label class="iti-label" style="margin-top: 0"
+            >Chọn dịch vụ niêm yết (hoặc tự nhập):</label
+          >
+          <select id="cp-service-select" class="modern-input">
+            <option value="">-- Tự nhập tên dịch vụ khác --</option>
+          </select>
+
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px">
+            <input
+              type="text"
+              id="cp-service-name"
+              class="modern-input"
+              placeholder="Tên món / dịch vụ *"
+            />
+            <input
+              type="text"
+              id="cp-service-unit"
+              class="modern-input"
+              placeholder="Đơn vị (Ly, Phần...) *"
+            />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+            <div>
+              <label style="font-size: 12px; font-weight: 600; color: #475569"
+                >Số tiền thực trả (VNĐ) *</label
+              >
+              <input
+                type="number"
+                id="cp-actual-price"
+                class="modern-input"
+                min="0"
+                placeholder="VD: 45000"
+              />
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 600; color: #475569"
+                >Ngày giao dịch *</label
+              >
+              <input
+                type="date"
+                id="cp-transaction-date"
+                class="modern-input"
+              />
+            </div>
+          </div>
+
+          <label style="font-size: 12px; font-weight: 600; color: #475569"
+            >Thời điểm / Điều kiện áp dụng *</label
+          >
+          <select id="cp-condition-type" class="modern-input">
+            <option value="normal">Ngày thường (Tiêu chuẩn)</option>
+            <option value="weekend">Cuối tuần (Thứ 7 / Chủ nhật)</option>
+            <option value="holiday">Dịp Lễ / Tết</option>
+            <option value="peak_season">Mùa cao điểm lễ hội</option>
+          </select>
+
+          <div class="file-upload-wrapper">
+            <input type="file" id="cp-receipt-file" accept="image/*" hidden />
+            <label for="cp-receipt-file" class="modern-file-label">
+              <i class="fa-solid fa-file-invoice"></i>
+              <span id="cp-receipt-label"
+                >Đính kèm ảnh hóa đơn / bảng giá (Tùy chọn)</span
+              >
+            </label>
+          </div>
+
+          <button
+            id="btn-submit-actual-price"
+            class="modern-submit-btn"
+            style="background: linear-gradient(135deg, #059669, #10b981)"
+          >
+            <i class="fa-solid fa-check-circle"></i> Gửi dữ liệu xác minh
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL 5 (PHASE 2): BÁO CÁO GIÁ SAI / CHÊNH LỆCH -->
+    <div id="discrepancy-modal" class="bm-modal">
+      <div class="bm-content" style="max-width: 480px">
+        <div class="bm-header">
+          <h3>
+            <i
+              class="fa-solid fa-triangle-exclamation"
+              style="color: #dc2626"
+            ></i>
+            Báo cáo Chênh lệch giá
+          </h3>
+          <button
+            id="close-discrepancy-modal"
+            style="
+              background: none;
+              border: none;
+              font-size: 20px;
+              cursor: pointer;
+            "
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div style="padding: 18px; overflow-y: auto">
+          <p
+            style="
+              font-size: 12px;
+              color: #7f1d1d;
+              margin-top: 0;
+              margin-bottom: 12px;
+              background: #fef2f2;
+              padding: 10px;
+              border-radius: 8px;
+              border: 1px solid #fecaca;
+            "
+          >
+            <i class="fa-solid fa-shield-halved"></i>
+            <strong>Bảo mật danh tính:</strong> Thông tin cá nhân của bạn được
+            bảo mật tuyệt đối và chỉ Ban quản trị cấp cao mới có quyền tiếp nhận
+            xử lý.
+          </p>
+
+          <label style="font-size: 12px; font-weight: 600; color: #475569"
+            >Dịch vụ phản ánh *</label
+          >
+          <select id="dr-service-select" class="modern-input">
+            <option value="">-- Chọn dịch vụ hoặc nhập bên dưới --</option>
+          </select>
+          <input
+            type="text"
+            id="dr-service-name"
+            class="modern-input"
+            placeholder="Tên dịch vụ / mặt hàng bị tính sai giá *"
+          />
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+            <div>
+              <label style="font-size: 12px; font-weight: 600; color: #475569"
+                >Giá niêm yết (VNĐ)</label
+              >
+              <input
+                type="number"
+                id="dr-listed-price"
+                class="modern-input"
+                min="0"
+                placeholder="VD: 30000"
+              />
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 600; color: #475569"
+                >Giá bị thu thực tế (VNĐ) *</label
+              >
+              <input
+                type="number"
+                id="dr-charged-price"
+                class="modern-input"
+                min="0"
+                placeholder="VD: 60000"
+              />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+            <div>
+              <label style="font-size: 12px; font-weight: 600; color: #475569"
+                >Ngày xảy ra *</label
+              >
+              <input type="date" id="dr-incident-date" class="modern-input" />
+            </div>
+            <div>
+              <label style="font-size: 12px; font-weight: 600; color: #475569"
+                >Thời điểm *</label
+              >
+              <select id="dr-condition-type" class="modern-input">
+                <option value="normal">Ngày thường</option>
+                <option value="weekend">Cuối tuần</option>
+                <option value="holiday">Dịp Lễ / Tết</option>
+                <option value="peak_season">Mùa cao điểm</option>
+              </select>
+            </div>
+          </div>
+
+          <textarea
+            id="dr-description"
+            class="modern-input"
+            rows="3"
+            placeholder="Mô tả cụ thể sự việc (tối thiểu 10 ký tự): số lượng, điều kiện thỏa thuận, lý do cơ sở đưa ra... *"
+          ></textarea>
+
+          <div class="file-upload-wrapper">
+            <input
+              type="file"
+              id="dr-evidence-files"
+              accept="image/*"
+              multiple
+              hidden
+            />
+            <label for="dr-evidence-files" class="modern-file-label">
+              <i class="fa-solid fa-camera"></i>
+              <span id="dr-evidence-label"
+                >Đính kèm ảnh bằng chứng / hóa đơn (Tùy chọn)</span
+              >
+            </label>
+          </div>
+
+          <button
+            id="btn-submit-discrepancy"
+            class="modern-submit-btn"
+            style="background: linear-gradient(135deg, #dc2626, #ef4444)"
+          >
+            <i class="fa-solid fa-paper-plane"></i> Gửi Báo Cáo Vi Phạm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL TRA CỨU & SO SÁNH GIÁ TOÀN KHU VỰC -->
+    <!-- MODAL CHATBOT TRỢ LÝ TRA CỨU ĐỊA ĐIỂM & GIÁ CẢ THOẠI SƠN -->
+    <div id="lookup-modal" class="bm-modal">
+      <div class="bm-content chatbot-modal-content">
+        <!-- Header Chatbot -->
+        <div class="bm-header chatbot-header">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <div class="chatbot-avatar-header">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+              <h3 style="margin: 0; font-size: 16px; color: #0f172a">
+                Trợ lý Du lịch Thoại Sơn
+              </h3>
+              <span style="font-size: 11px; color: #10b981; font-weight: 600">
+                <i class="fa-solid fa-circle" style="font-size: 7px"></i> Trực
+                tuyến • Dữ liệu xác thực từ Bản đồ
+              </span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button
+              id="btn-clear-chat"
+              class="btn-clear-chat"
+              title="Làm mới cuộc trò chuyện"
             >
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            <button
+              id="close-lookup-modal"
+              style="
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                color: #64748b;
+              "
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
           </div>
         </div>
 
-        <div style="margin-bottom: 15px">
-          <span class="iti-label">Phương tiện:</span>
-          <div class="chip-group">
-            <label class="chip"
-              ><input
-                type="radio"
-                name="iti_vehicle"
-                value="driving"
-                checked
-                style="display: none"
-              /><span>Xe máy/Ô tô</span></label
-            >
-            <label class="chip"
-              ><input
-                type="radio"
-                name="iti_vehicle"
-                value="walking"
-                style="display: none"
-              /><span>Đi bộ</span></label
-            >
-          </div>
+        <!-- Khung hiển thị tin nhắn -->
+        <div id="chatbot-messages" class="chatbot-messages"></div>
+
+        <!-- Các nút gợi ý câu hỏi nhanh (Quick Replies) -->
+        <div class="chatbot-suggestions" id="chatbot-suggestions">
+          <button
+            type="button"
+            class="chat-chip"
+            data-query="Địa điểm du lịch nổi bật ở Thoại Sơn"
+          >
+            🏞️ Điểm tham quan
+          </button>
+          <button
+            type="button"
+            class="chat-chip"
+            data-query="Quán ăn ngon và bảng giá"
+          >
+            🍜 Ăn uống & Giá
+          </button>
+          <button
+            type="button"
+            class="chat-chip"
+            data-query="Tìm khách sạn lưu trú"
+          >
+            🏨 Lưu trú
+          </button>
+          <button
+            type="button"
+            class="chat-chip"
+            data-query="Địa điểm nào gần tôi nhất?"
+          >
+            📍 Gần tôi nhất
+          </button>
+          <button
+            type="button"
+            class="chat-chip"
+            data-query="Lịch sử Núi Sập và Thoại Ngọc Hầu"
+          >
+            📜 Lịch sử Thoại Sơn
+          </button>
         </div>
 
-        <div style="margin-bottom: 15px">
-          <span class="iti-label">Đối tượng:</span>
-          <div class="chip-group">
-            <label class="chip"
-              ><input
-                type="radio"
-                name="iti_companion"
-                value="friends"
-                checked
-                style="display: none"
-              /><span>Bạn bè</span></label
-            >
-            <label class="chip"
-              ><input
-                type="radio"
-                name="iti_companion"
-                value="family"
-                style="display: none"
-              /><span>Gia đình</span></label
-            >
-          </div>
-        </div>
+        <!-- Thanh nhập tin nhắn -->
+        <form id="chatbot-form" class="chatbot-input-bar">
+          <input
+            type="text"
+            id="chatbot-input"
+            placeholder="Hỏi về địa điểm, món ăn, giá vé tại Thoại Sơn..."
+            autocomplete="off"
+          />
+          <button type="submit" id="chatbot-send-btn" title="Gửi tin nhắn">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+    </div>
 
-        <div style="margin-bottom: 20px">
-          <span class="iti-label">Sở thích:</span>
-          <div class="chip-group">
-            <label class="chip"
-              ><input
-                type="checkbox"
-                class="iti-pref"
-                value="Du lịch"
-                checked
-                style="display: none"
-              /><span>Du lịch</span></label
-            >
-            <label class="chip"
-              ><input
-                type="checkbox"
-                class="iti-pref"
-                value="Quán ăn"
-                checked
-                style="display: none"
-              /><span>Ăn uống</span></label
-            >
-          </div>
+    <!-- MODAL TÌM HIỂU (CẨM NANG & CƠ CHẾ MINH BẠCH GIÁ) -->
+    <div id="explore-modal" class="bm-modal">
+      <div class="bm-content" style="max-width: 600px; max-height: 88vh">
+        <div class="bm-header">
+          <h3>
+            <i class="fa-solid fa-book-open" style="color: #059669"></i> Tìm
+            hiểu Du lịch Núi Sập & Cơ chế Giá
+          </h3>
+          <button
+            id="close-explore-modal"
+            style="
+              background: none;
+              border: none;
+              font-size: 20px;
+              cursor: pointer;
+            "
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
-
-        <button id="btn-generate-route" class="btn-primary" style="width: 100%">
-          Tính toán lộ trình
-        </button>
-        <button
-          id="close-itinerary-modal"
+        <div
           style="
-            width: 100%;
-            margin-top: 10px;
-            padding: 12px;
-            border: none;
-            background: #e2e8f0;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
+            padding: 18px;
+            overflow-y: auto;
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: #334155;
           "
         >
-          Hủy
-        </button>
+          <div class="info-card-block">
+            <h4 style="margin: 0 0 6px 0; color: #0f172a">
+              <i class="fa-solid fa-mountain-sun" style="color: #10b981"></i> 1.
+              Điểm đến Văn hóa - Tâm linh - Sinh thái Núi Sập
+            </h4>
+            <p style="margin: 0">
+              Núi Sập (Thoại Sơn, An Giang) nổi bật với quần thể
+              <strong>Khu du lịch Hồ Ông Thoại</strong> và
+              <strong>Đền thờ Thoại Ngọc Hầu</strong> – công trình tưởng niệm
+              danh thần Nguyễn Văn Thoại, người có công khai mở kênh Thoại Hà từ
+              đầu thế kỷ XIX.
+            </p>
+          </div>
+
+          <div class="info-card-block">
+            <h4 style="margin: 0 0 6px 0; color: #0f172a">
+              <i class="fa-solid fa-scale-balanced" style="color: #0052cc"></i>
+              2. Cơ chế Minh bạch giá 3 tầng trên hệ thống
+            </h4>
+            <ul style="margin: 0; padding-left: 18px">
+              <li>
+                <strong>Tầng 1 - Giá niêm yết:</strong> Do Ban quản lý hoặc cơ
+                sở công bố rõ theo đơn vị tính và điều kiện áp dụng (Ngày
+                thường, Cuối tuần, Lễ/Tết).
+              </li>
+              <li>
+                <strong>Tầng 2 - Giá thực trả từ cộng đồng:</strong> Du khách
+                đóng góp mức giá thực tế đã thanh toán kèm hóa đơn (nếu có).
+              </li>
+              <li>
+                <strong
+                  >Tầng 3 - Thống kê Trung vị & Lọc ngoại lai (IQR):</strong
+                >
+                Hệ thống tính <em>Trung vị (Median)</em> và lọc nhiễu bằng tứ
+                phân vị. Cảnh báo chỉ kích hoạt khi có tối thiểu mẫu xác minh và
+                độ lệch vượt ngưỡng 15%, giúp chống thao túng dữ liệu.
+              </li>
+            </ul>
+          </div>
+
+          <div class="info-card-block" style="margin-bottom: 0">
+            <h4 style="margin: 0 0 6px 0; color: #0f172a">
+              <i class="fa-solid fa-lightbulb" style="color: #f59e0b"></i> 3.
+              Hướng dẫn dành cho du khách
+            </h4>
+            <p style="margin: 0">
+              Trước khi gọi món hoặc thuê dịch vụ, hãy bấm vào điểm trên bản đồ
+              hoặc mục <strong>Tra cứu</strong> để xem khoảng giá tham khảo. Nếu
+              phát hiện thu sai giá niêm yết, hãy sử dụng nút
+              <strong>Báo cáo giá sai</strong> để Ban quản trị tiếp nhận xử lý.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL VỀ CHÚNG TÔI -->
+    <div id="about-modal" class="bm-modal">
+      <div class="bm-content" style="max-width: 540px; max-height: 88vh">
+        <div class="bm-header">
+          <h3>
+            <i class="fa-solid fa-circle-info" style="color: #8b5cf6"></i> Về
+            chúng tôi
+          </h3>
+          <button
+            id="close-about-modal"
+            style="
+              background: none;
+              border: none;
+              font-size: 20px;
+              cursor: pointer;
+            "
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div
+          style="
+            padding: 18px;
+            overflow-y: auto;
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: #334155;
+          "
+        >
+          <div class="info-card-block">
+            <h4 style="margin: 0 0 6px 0; color: #0f172a">Sứ mệnh dự án</h4>
+            <p style="margin: 0">
+              <strong>Bản đồ số Du lịch Núi Sập</strong> là nền tảng ứng dụng
+              GIS kết hợp xác minh dữ liệu cộng đồng nhằm
+              <strong>giảm thiểu sự bất cân xứng thông tin</strong> giữa du
+              khách và cơ sở dịch vụ, xây dựng môi trường du lịch địa phương văn
+              minh, minh bạch và bền vững.
+            </p>
+          </div>
+
+          <div class="info-card-block">
+            <h4 style="margin: 0 0 6px 0; color: #0f172a">Giá trị cốt lõi</h4>
+            <ul style="margin: 0; padding-left: 18px">
+              <li>
+                <strong>Minh bạch & Khách quan:</strong> Không quy chụp cảm
+                tính, mọi cảnh báo giá đều dựa trên kiểm định thống kê và kiểm
+                duyệt bằng chứng.
+              </li>
+              <li>
+                <strong>Bảo vệ người tiêu dùng:</strong> Ẩn danh tuyệt đối thông
+                tin cá nhân của du khách gửi báo cáo phản ánh giá bằng cơ chế
+                Row-Level Security (RLS).
+              </li>
+              <li>
+                <strong>Hỗ trợ lập kế hoạch thực tế:</strong> Dự toán ngân sách
+                theo khoảng giá sát với dữ liệu thực địa.
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- 4. GỌI LOGIC SAU KHI ĐÃ CÓ DOM VÀ CẤU HÌNH -->
-    <script src="config.js"></script>
-    <script src="script.js" defer></script>
+    <script src="config.js?v=10"></script>
+    <script src="phase2_verifier.js?v=10"></script>
+    <script src="script.js?v=10" defer></script>
   </body>
 </html>
