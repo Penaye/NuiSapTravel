@@ -59,10 +59,15 @@
           <i class="fa-solid fa-book-open"></i>
           <span>Tìm hiểu</span>
         </button>
-        <button type="button" class="nav-link-btn" id="nav-btn-about">
+        <a
+          href="about.html"
+          class="nav-link-btn"
+          id="nav-btn-about"
+          style="text-decoration: none"
+        >
           <i class="fa-solid fa-circle-info"></i>
           <span>Về chúng tôi</span>
-        </button>
+        </a>
       </nav>
     </header>
 
@@ -400,7 +405,7 @@
 
         <!-- BODY -->
         <div class="iti-modal-body" id="iti-modal-scroll-body">
-          <!-- Phần 1: Đối tượng chuyến đi (Dàn 4 cột đều nhau, không bao giờ rớt dòng) -->
+          <!-- Phần 1: Đối tượng chuyến đi -->
           <div class="iti-section">
             <label class="iti-field-label">1. Đối tượng chuyến đi</label>
             <div class="iti-companion-grid">
@@ -512,7 +517,7 @@
             </div>
           </div>
 
-          <!-- Phần 4: Phương tiện & Loại địa điểm muốn ghé (Cùng 1 hàng gọn đẹp) -->
+          <!-- Phần 4: Phương tiện & Loại địa điểm muốn ghé -->
           <div class="iti-grid-transport-pref">
             <div>
               <label class="iti-field-label">Phương tiện</label>
@@ -569,7 +574,7 @@
             </div>
           </div>
 
-          <!-- Phần 5: Ngân sách dự kiến (Dạng thẻ lưới 4 cột - Không có thanh cuộn ngang) -->
+          <!-- Phần 5: Ngân sách dự kiến -->
           <div class="iti-section" style="margin-bottom: 16px">
             <div class="iti-budget-header">
               <label class="iti-field-label" style="margin-bottom: 0">
@@ -910,7 +915,6 @@
       </div>
     </div>
 
-    <!-- MODAL TRA CỨU & SO SÁNH GIÁ TOÀN KHU VỰC -->
     <!-- MODAL CHATBOT TRỢ LÝ TRA CỨU ĐỊA ĐIỂM & GIÁ CẢ THOẠI SƠN -->
     <div id="lookup-modal" class="bm-modal">
       <div class="bm-content chatbot-modal-content">
@@ -1090,69 +1094,6 @@
               phát hiện thu sai giá niêm yết, hãy sử dụng nút
               <strong>Báo cáo giá sai</strong> để Ban quản trị tiếp nhận xử lý.
             </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL VỀ CHÚNG TÔI -->
-    <div id="about-modal" class="bm-modal">
-      <div class="bm-content" style="max-width: 540px; max-height: 88vh">
-        <div class="bm-header">
-          <h3>
-            <i class="fa-solid fa-circle-info" style="color: #8b5cf6"></i> Về
-            chúng tôi
-          </h3>
-          <button
-            id="close-about-modal"
-            style="
-              background: none;
-              border: none;
-              font-size: 20px;
-              cursor: pointer;
-            "
-          >
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-        <div
-          style="
-            padding: 18px;
-            overflow-y: auto;
-            font-size: 13.5px;
-            line-height: 1.6;
-            color: #334155;
-          "
-        >
-          <div class="info-card-block">
-            <h4 style="margin: 0 0 6px 0; color: #0f172a">Sứ mệnh dự án</h4>
-            <p style="margin: 0">
-              <strong>Bản đồ số Du lịch Núi Sập</strong> là nền tảng ứng dụng
-              GIS kết hợp xác minh dữ liệu cộng đồng nhằm
-              <strong>giảm thiểu sự bất cân xứng thông tin</strong> giữa du
-              khách và cơ sở dịch vụ, xây dựng môi trường du lịch địa phương văn
-              minh, minh bạch và bền vững.
-            </p>
-          </div>
-
-          <div class="info-card-block">
-            <h4 style="margin: 0 0 6px 0; color: #0f172a">Giá trị cốt lõi</h4>
-            <ul style="margin: 0; padding-left: 18px">
-              <li>
-                <strong>Minh bạch & Khách quan:</strong> Không quy chụp cảm
-                tính, mọi cảnh báo giá đều dựa trên kiểm định thống kê và kiểm
-                duyệt bằng chứng.
-              </li>
-              <li>
-                <strong>Bảo vệ người tiêu dùng:</strong> Ẩn danh tuyệt đối thông
-                tin cá nhân của du khách gửi báo cáo phản ánh giá bằng cơ chế
-                Row-Level Security (RLS).
-              </li>
-              <li>
-                <strong>Hỗ trợ lập kế hoạch thực tế:</strong> Dự toán ngân sách
-                theo khoảng giá sát với dữ liệu thực địa.
-              </li>
-            </ul>
           </div>
         </div>
       </div>

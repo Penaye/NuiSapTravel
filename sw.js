@@ -1,4 +1,4 @@
-const CACHE_NAME = "nuisap-map-v1";
+const CACHE_NAME = "nuisap-map-v2";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -6,6 +6,8 @@ const ASSETS_TO_CACHE = [
   "/script.js",
   "/config.js",
   "/manifest.json",
+  "/theme.css",
+  "/motion.js",
 ];
 
 self.addEventListener("install", (event) => {
